@@ -32,6 +32,15 @@
 #include "./trajectories/gvf_parametric_3d_ellipse.h"
 #include "./trajectories/gvf_parametric_3d_lissajous.h"
 #include "./trajectories/gvf_parametric_2d_trefoil.h"
+#include "./trajectories/gvf_parametric_2d_splines.h"
+#include "../gvf_common.h"
+
+// Number of samples of the speed moving average filter
+#ifndef MOV_AVG_GVF_M
+#define MOV_AVG_GVF_M 10
+#endif
+
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,6 +61,16 @@ int gvf_parametric_plen_wps = 0;
 
 // Error signals array lenght
 int gvf_parametric_elen = 3;
+
+// Splines structs
+spline_t gvf_splines_2D_x[GVF_PARAMETRIC_2D_SPLINES_N_SEG];
+spline_t gvf_splines_2D_y[GVF_PARAMETRIC_2D_SPLINES_N_SEG];
+
+
+// Moving average variables
+static int ptr_avg = 0;
+static float speed_avg = 0;
+static float mvg_avg[MOV_AVG_GVF_M] = {0};
 
 #if PERIODIC_TELEMETRY
 #include "modules/datalink/telemetry.h"
@@ -101,6 +120,12 @@ void gvf_parametric_init(void)
   gvf_parametric_control.L = GVF_PARAMETRIC_CONTROL_L;
   gvf_parametric_control.beta = GVF_PARAMETRIC_CONTROL_BETA;
 
+  // Init moving average array
+  float speed = stateGetHorizontalSpeedNorm_f();
+  for(int k = 0; k < MOV_AVG_GVF_M; k++)
+  	mvg_avg[k] = speed;
+  speed_avg = speed;
+  
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GVF_PARAMETRIC, send_gvf_parametric);
 #if GVF_OCAML_GCS
@@ -128,8 +153,8 @@ void gvf_parametric_control_2D(float kx, float ky, float f1, float f2, float f1d
   }
 
   // Carrot position
-  desired_x = f1;
-  desired_y = f2;
+  //desired_x = f1;
+  //desired_y = f2;
 
   float L = gvf_parametric_control.L;
   float beta = gvf_parametric_control.beta * gvf_parametric_control.s;
@@ -165,8 +190,16 @@ void gvf_parametric_control_2D(float kx, float ky, float f1, float f2, float f1d
   J *= L;
 
   // Guidance algorithm
-  float ground_speed = stateGetHorizontalSpeedNorm_f();
-  float w_dot = (ground_speed * X(2)) / sqrtf(X(0) * X(0) + X(1) * X(1));
+  //float ground_speed = stateGetHorizontalSpeedNorm_f();
+  //float w_dot = (ground_speed * X(2)) / sqrtf(X(0) * X(0) + X(1) * X(1));
+
+  // Use moving avg for w_dot
+  speed_avg = speed_avg - mvg_avg[ptr_avg]/MOV_AVG_M;
+  mvg_avg[ptr_avg] = stateGetHorizontalSpeedNorm_f();
+  speed_avg = speed_avg + mvg_avg[ptr_avg]/MOV_AVG_M;
+  ptr_avg = (ptr_avg + 1) % MOV_AVG_M;
+ 
+  float w_dot = (speed_avg * X(2)) / sqrtf(X(0) * X(0) + X(1) * X(1));
 
   Eigen::Vector3f xi_dot;
   struct EnuCoor_f *vel_enu = stateGetSpeedEnu_f();
@@ -202,6 +235,11 @@ void gvf_parametric_control_2D(float kx, float ky, float f1, float f2, float f1d
   float heading_rate = -1 / (Xt * G * X) * Xt * Gp * (I - Xh * Xht) * J * xi_dot - (gvf_parametric_control.k_psi * aux /
                        sqrtf(Xt * G * X));
 
+  // Ctrl purposes
+  gvf_parametric_control.omega = heading_rate;
+  // From gvf_common.h
+  gvf_c_omega.omega = heading_rate; 
+  
   // Virtual coordinate update, even if the vehicle is not in autonomous mode, the parameter w will get "closer" to
   // the vehicle. So it is not only okei but advisable to update it.
   gvf_parametric_control.w += w_dot * gvf_parametric_control.delta_T * 1e-3;
@@ -209,6 +247,7 @@ void gvf_parametric_control_2D(float kx, float ky, float f1, float f2, float f1d
   gvf_parametric_low_level_control_2D(heading_rate);
 }
 
+#ifdef FIXEDWING_FIRMWARE
 void gvf_parametric_control_3D(float kx, float ky, float kz, float f1, float f2, float f3, float f1d, float f2d,
                                float f3d, float f1dd, float f2dd, float f3dd)
 {
@@ -222,8 +261,8 @@ void gvf_parametric_control_3D(float kx, float ky, float kz, float f1, float f2,
   }
 
   // Carrot position
-  desired_x = f1;
-  desired_y = f2;
+  //desired_x = f1;
+  //desired_y = f2;
 
   float L = gvf_parametric_control.L;
   float beta = gvf_parametric_control.beta * gvf_parametric_control.s;
@@ -315,10 +354,12 @@ void gvf_parametric_control_3D(float kx, float ky, float kz, float f1, float f2,
 
   gvf_parametric_low_level_control_3D(heading_rate, climbing_rate);
 }
+#endif
 
 /** 2D TRAJECTORIES **/
 // 2D TREFOIL KNOT
 
+#ifdef FIXEDWING_FIRMWARE
 bool gvf_parametric_2D_trefoil_XY(float xo, float yo, float w1, float w2, float ratio, float r, float alpha)
 {
   gvf_parametric_trajectory.type = TREFOIL_2D;
@@ -349,10 +390,88 @@ bool gvf_parametric_2D_trefoil_wp(uint8_t wp, float w1, float w2, float ratio, f
   gvf_parametric_2D_trefoil_XY(waypoints[wp].x, waypoints[wp].y, w1, w2, ratio, r, alpha);
   return true;
 }
+#endif
+
+#ifdef ROVER_FIRMWARE
+// 2D NATURAL CUBIC SPLINES 
+bool gvf_parametric_2D_splines_XY()
+{
+	gvf_parametric_trajectory.type = SPLINES_2D;
+	float fx, fy, fxd, fyd, fxdd, fydd;
+	
+	gvf_parametric_2d_splines_info(gvf_splines_2D_x, gvf_splines_2D_y, &fx, &fy, &fxd, &fyd, &fxdd, &fydd);
+	gvf_parametric_control_2D(gvf_parametric_2d_splines_par.kx, gvf_parametric_2d_splines_par.ky, fx, fy, fxd, fyd, fxdd, fydd);
+	return true;
+}
+
+// TODO: Improve scalability (pass an array of wp and time breaks (t). N_segments => N-1 ctrl points + init points + end point)
+bool gvf_parametric_2D_splines_wp(uint8_t wp0, uint8_t wp1, uint8_t wp2, uint8_t wp3, uint8_t wp4, uint8_t wp5, uint8_t wp6, uint8_t wp7, uint8_t wp8,float t0, float t1, float t2, float t3, float t4, float t5, float t6, float t7, float t8)
+{
+	float x[GVF_PARAMETRIC_2D_SPLINES_N_SEG+1];
+	float y[GVF_PARAMETRIC_2D_SPLINES_N_SEG+1];
+	float t[GVF_PARAMETRIC_2D_SPLINES_N_SEG+1];
+	
+	x[0] = WaypointX(wp0);	x[1] = WaypointX(wp1);
+	x[2] = WaypointX(wp2);	x[3] = WaypointX(wp3);	
+	x[4] = WaypointX(wp4); x[5] = WaypointX(wp5);
+	x[6] = WaypointX(wp6);	x[7] = WaypointX(wp7);	
+	x[8] = WaypointX(wp8); 
+	
+	y[0] = WaypointY(wp0);	y[1] = WaypointY(wp1);
+	y[2] = WaypointY(wp2);	y[3] = WaypointY(wp3);	
+	y[4] = WaypointY(wp4);	y[5] = WaypointY(wp5);	
+	y[6] = WaypointY(wp6);	y[7] = WaypointY(wp7);
+	y[8] = WaypointY(wp8);
+	
+	
+	t[0] = t0; t[1] = t1; t[2] = t2; t[3] = t3; t[4] = t4;
+	t[5] = t5; t[6] = t6; t[7] = t7; t[8] = t8;
+	get_splines_from_ctrl_points(gvf_splines_2D_x, t, x);
+	get_splines_from_ctrl_points(gvf_splines_2D_y, t, y);
+	
+	// For the telemetry
+	gvf_parametric_trajectory.p_parametric[0] = x[0];
+	gvf_parametric_trajectory.p_parametric[1] = x[1];
+	gvf_parametric_trajectory.p_parametric[2] = x[2];
+	gvf_parametric_trajectory.p_parametric[3] = x[3];
+	gvf_parametric_trajectory.p_parametric[4] = x[4];
+	gvf_parametric_trajectory.p_parametric[5] = x[5];
+	gvf_parametric_trajectory.p_parametric[6] = x[6];
+	gvf_parametric_trajectory.p_parametric[7] = x[7];
+	gvf_parametric_trajectory.p_parametric[8] = x[8];
+	
+	gvf_parametric_trajectory.p_parametric[9] = y[0];
+	gvf_parametric_trajectory.p_parametric[10] = y[1];
+	gvf_parametric_trajectory.p_parametric[11] = y[2];
+	gvf_parametric_trajectory.p_parametric[12] = y[3];
+	gvf_parametric_trajectory.p_parametric[13] = y[4];
+	gvf_parametric_trajectory.p_parametric[14] = y[5];
+	gvf_parametric_trajectory.p_parametric[15] = y[6];
+	gvf_parametric_trajectory.p_parametric[16] = y[7];
+	gvf_parametric_trajectory.p_parametric[17] = y[8];
+	
+	gvf_parametric_trajectory.p_parametric[18] = t[0];
+	gvf_parametric_trajectory.p_parametric[19] = t[1];
+	gvf_parametric_trajectory.p_parametric[20] = t[2];
+	gvf_parametric_trajectory.p_parametric[21] = t[3];
+	gvf_parametric_trajectory.p_parametric[22] = t[4];
+	gvf_parametric_trajectory.p_parametric[23] = t[5];
+	gvf_parametric_trajectory.p_parametric[24] = t[6];
+	gvf_parametric_trajectory.p_parametric[25] = t[7];
+	gvf_parametric_trajectory.p_parametric[26] = t[8];
+	
+	gvf_parametric_plen = 27;
+	gvf_parametric_plen_wps = 0;
+	
+	gvf_parametric_2D_splines_XY();
+	return true;
+}
+#endif
+
 
 /** 3D TRAJECTORIES **/
 // 3D ELLIPSE
-
+#ifdef FIXEDWING_FIRMWARE
 bool gvf_parametric_3D_ellipse_XYZ(float xo, float yo, float r, float zl, float zh, float alpha)
 {
   horizontal_mode = HORIZONTAL_MODE_CIRCLE; //  Circle for the 2D GCS
@@ -452,3 +571,4 @@ bool gvf_parametric_3D_lissajous_wp_center(uint8_t wp, float zo, float cx, float
   gvf_parametric_3D_lissajous_XYZ(waypoints[wp].x, waypoints[wp].y, zo, cx, cy, cz, wx, wy, wz, dx, dy, dz, alpha);
   return true;
 }
+#endif

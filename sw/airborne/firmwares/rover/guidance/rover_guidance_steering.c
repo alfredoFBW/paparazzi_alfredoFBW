@@ -40,14 +40,55 @@
 // Guidance control main variables
 rover_ctrl guidance_control;
 
+
+#if PERIODIC_TELEMETRY
+#include "modules/datalink/telemetry.h"
+#endif
+
+// Moving Average filter. Number of samples
+#ifndef MOV_AVG_M
+#define MOV_AVG_M 10
+#endif
+
+PRINT_CONFIG_VAR(MOV_AVG_M)
+
+static int ptr_avg = 0;
+static float speed_avg = 0;
+static float mvg_avg[MOV_AVG_M] = {0};
+
+
 static struct PID_f rover_pid;
 static float time_step;
 static float last_speed_cmd;
 static uint8_t last_ap_mode;
 
+// Integral and prop actions (telemetry)
+static float i_action;
+static float p_action;
+
+#if PERIODIC_TELEMETRY
+static void send_rover_ctrl(struct transport_tx *trans, struct link_device *dev)
+{
+  pprz_msg_send_ROVER_CTRL(trans, dev, AC_ID,
+                    	    &guidance_control.cmd.speed,
+                    	    &guidance_control.speed_error,
+                    	    &guidance_control.throttle,
+                    	    &guidance_control.cmd.delta,
+                    	    &i_action,				// Integral action
+                    	    &p_action,                        // Prop action 
+                    	    &speed_avg);                      // Avg speed measured 
+}
+#endif
+
+
 /** INIT function **/
 void rover_guidance_steering_init(void)
 {
+
+  #if PERIODIC_TELEMETRY
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ROVER_CTRL, send_rover_ctrl);
+  #endif
+
   guidance_control.cmd.delta = 0.0;
   guidance_control.cmd.speed = 0.0;
   guidance_control.throttle  = 0.0;
@@ -62,6 +103,12 @@ void rover_guidance_steering_init(void)
 
   init_pid_f(&rover_pid, guidance_control.kp, 0.f, guidance_control.ki, MAX_PPRZ*0.2);
 
+  // Mov avg init
+  float speed = stateGetHorizontalSpeedNorm_f();
+  for(int k = 0; k < MOV_AVG_M; k++)
+  	mvg_avg[k] = speed;
+  speed_avg = speed;
+  
   // Based on autopilot state machine frequency
   time_step = 1.f/PERIODIC_FREQUENCY;
 }
@@ -73,8 +120,9 @@ void rover_guidance_steering_heading_ctrl(float omega) //GVF give us this omega
   float delta = 0.0;
 
   // Speed is bounded to avoid GPS noise while driving at small velocity
-  float speed = BoundSpeed(stateGetHorizontalSpeedNorm_f()); 
-
+  //float speed = BoundSpeed(stateGetHorizontalSpeedNorm_f()); 
+  float speed = speed_avg; // Use avg, avoid noise
+  
   if (fabs(omega)>0.0) {
       delta = DegOfRad(-atanf(omega*DRIVE_SHAFT_DISTANCE/speed));
     }
@@ -94,11 +142,22 @@ void rover_guidance_steering_speed_ctrl(void)
     //reset_pid_f(&rover_pid);
   }
 
+  // Mov avg speed
+  speed_avg = speed_avg - mvg_avg[ptr_avg]/MOV_AVG_M;
+  mvg_avg[ptr_avg] = stateGetHorizontalSpeedNorm_f();
+  speed_avg = speed_avg + mvg_avg[ptr_avg]/MOV_AVG_M;
+  ptr_avg = (ptr_avg + 1) % MOV_AVG_M;
+
   // - Updating PID
-  guidance_control.speed_error = (guidance_control.cmd.speed - stateGetHorizontalSpeedNorm_f());
+  //guidance_control.speed_error = (guidance_control.cmd.speed - stateGetHorizontalSpeedNorm_f());
+  guidance_control.speed_error = guidance_control.cmd.speed - speed_avg;
   update_pid_f(&rover_pid, guidance_control.speed_error, time_step);
 
   guidance_control.throttle = BoundThrottle(guidance_control.kf*guidance_control.cmd.speed + get_pid_f(&rover_pid));
+  
+  // Telemetry
+  i_action = get_i_action(&rover_pid, guidance_control.speed_error, time_step);
+  p_action = get_p_action(&rover_pid, guidance_control.speed_error);
 }
 
 

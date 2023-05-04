@@ -69,7 +69,7 @@ static inline float update_pid_f(struct PID_f *pid, float value, float dt)
 {
   pid->e[1] = pid->e[0];
   pid->e[0] = value;
-  float integral = pid->g[2] * (pid->sum + value);
+  float integral = pid->g[2] * (pid->sum + value) * dt; // dt added
   if (integral > pid->max_sum) {
     integral = pid->max_sum;
   } else if (integral < -pid->max_sum) {
@@ -79,6 +79,24 @@ static inline float update_pid_f(struct PID_f *pid, float value, float dt)
   }
   pid->u = pid->g[0] * pid->e[0] + pid->g[1] * (pid->e[0] - pid->e[1]) / dt + integral;
   return pid->u;
+}
+
+/** Functions to get pi actions for telemetry
+*   @param pid pointer to PID structure
+*   @param error, error input to the PID
+*   @param dt time step
+*   @return integral and proportional actions
+*/
+static inline float get_i_action(struct PID_f *pid, float error, float dt)
+{
+	float integral; 
+	integral = pid->g[2] * (pid->sum + error) * dt;
+	return ( (integral > pid->max_sum) ? pid->max_sum : ((integral < -pid->max_sum) ? -pid->max_sum : integral));
+}
+
+static inline float get_p_action(struct PID_f *pid, float error)
+{
+	return pid->g[0] * error;
 }
 
 /** Get current value of the PID command.
