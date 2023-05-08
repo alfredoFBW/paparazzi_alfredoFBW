@@ -59,6 +59,10 @@ For more details we refer to https://wiki.paparazziuav.org/wiki/Module/guidance_
       </dl_settings>
     </dl_settings>
   </settings>
+ <dep>
+    <depends>gvf_common</depends>
+  </dep>
+
 
    <header>
      <file name="gvf.h"/>
@@ -67,7 +71,7 @@ For more details we refer to https://wiki.paparazziuav.org/wiki/Module/guidance_
      <file name="trajectories/gvf_sin.h"/>
      <file name="trajectories/gvf_ellipse.h"/>
      <file name="nav/nav_survey_polygon_gvf.h"/>
-     <file name="../gvf_common.h"/>
+
    </header>
 
    <init fun = "gvf_init()"/>

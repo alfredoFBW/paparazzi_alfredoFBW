@@ -1,0 +1,42 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="sonar_bluerobotics" dir="sonar">
+  <doc>
+    <description>
+      Decoder for ping protocol from Blue
+
+      Data are extracted from a serial link 
+    </description>
+    <configure name="SONAR_UART" value="UARTX" description="UART on which sonar is connected"/>
+    <configure name="SONAR_BAUD" value="B115200" description="UART Baudrate, default to 115200"/>
+  </doc>
+  <settings>
+    <dl_settings>
+      <dl_settings NAME="BR_Sonar">
+        <dl_setting MAX="1" MIN="0" STEP="1" VAR="sonar_stream_setting" shortname="stream" module="modules/sonar/sonar_bluerobotics" values="FALSE|TRUE"/>
+      </dl_settings>
+    </dl_settings>
+  </settings>
+  <dep>
+    <depends>uart</depends>
+  </dep>
+  <header>
+    <file name="sonar_bluerobotics.h"/>
+  </header>
+  <init fun="sonar_init()"/>
+  <periodic fun="sonar_ping()" freq="5" autorun="TRUE"/>
+  <event fun="sonar_event()"/>
+  <!--
+  <periodic fun="sonar_report()" freq="5" autorun="FALSE"/>
+  <periodic fun="sonar_send_state()" freq="4" autorun="TRUE"/>
+  <event fun="sonar_event()"/>
+  -->
+  <makefile>
+    <configure name="SONAR_UART" default = "UART3" case="upper|lower"/> <!-- Revisar estos configure | Mirar gps_ublox.xml -->
+    <configure name="SONAR_BAUD" default="B115200"/>
+    <file name="sonar_bluerobotics.c"/>
+    <define name="USE_$(SONAR_UART_UPPER)"/> <!-- for uart_arch-->
+    <define name="SONAR_DEV" value="$(SONAR_UART_LOWER)"/>
+    <define name="$(SONAR_UART_UPPER)_BAUD" value="$(SONAR_BAUD)"/>
+  </makefile>
+</module>

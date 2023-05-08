@@ -1,0 +1,108 @@
+<!DOCTYPE autopilot SYSTEM "autopilot.dtd">
+
+<autopilot name="Boat Autopilot">
+
+  <state_machine name="ap" freq="PERIODIC_FREQUENCY" gcs_mode="true" settings_mode="true">
+
+    <includes>
+      <include name="generated/airframe.h"/>
+      <include name="autopilot.h"/>
+      <include name="autopilot_rc_helpers.h"/>
+      <include name="modules/gps/gps.h"/>
+      <include name="modules/actuators/actuators.h"/>
+      <include name="navigation.h"/>
+      <include name="modules/radio_control/radio_control.h"/>
+      <include name="guidance/boat_guidance.h"/>
+      <include name="state.h"/>
+      <include name="modules/guidance/gvf_common.h"/>
+
+      <define  name="RCLost()" value="(radio_control.status == RC_REALLY_LOST)"/>
+    </includes>
+
+    <settings>
+      <dl_setting var="autopilot.kill_throttle" min="0" step="1" max="1" module="autopilot" values="Resurrect|Kill" handler="KillThrottle"/>
+    </settings>
+
+    <exceptions>
+      <!--exception cond="nav.too_far_from_home" deroute="HOME"/-->
+      <exception cond="kill_switch_is_on()"   deroute="KILL"/>
+    </exceptions>
+
+    <!-- * AP MODES * ...................................................................... -->
+    <!-- RC Manual -->
+    <mode name="DIRECT" shortname="MANUAL_RC">
+      <select cond="RCMode0()"/>
+      <control freq="NAVIGATION_FREQUENCY"> <!-- Only for display -->
+        <call fun="nav_periodic_task()"/>
+      </control>
+      <control>
+	<call fun="SetCommandsFromRC(commands, radio_control.values)"/>
+        <call fun="SetActuatorsFromCommands(commands, autopilot_get_mode())"/>
+        <call fun="SetAPThrottleFromCommands()"/>
+      </control>
+      <exception cond="RCLost()" deroute="KILL"/>
+    </mode>
+
+    <!-- ASSISTED RC -->
+    <mode name="ASSISTED" shortname="ASSISTED_RC">
+      <select cond="RCMode1()"/>
+      <control freq="NAVIGATION_FREQUENCY">
+        <call fun="nav_periodic_task()"/>
+      </control>
+      <control>
+        <call fun="boat_guidance_read_rc()"/>
+        <call fun="SetActuatorsFromCommands(commands, autopilot_get_mode())"/>
+        <call fun="SetAPThrottleFromCommands()"/>
+      </control>
+      <exception cond="RCLost()" deroute="KILL"/>
+    </mode>
+    
+    <!-- NAV mode: Speed crtl (from state speed on enter) + heading ctrl (from GCS & flight plans) -->
+    <mode name="NAV">
+      <select cond="RCMode2()"/>
+      <control freq="NAVIGATION_FREQUENCY">
+        <call fun="nav_periodic_task()"/>
+      </control>
+      <control>
+      	<!--TODO: Hay que repensarlo, necesitamos módulo de programación --> 
+        <!--call fun="rover_guidance_steering_speed_ctrl()"/>
+        <call fun="rover_guidance_steering_heading_ctrl()"/-->
+	<call fun = "boat_guidance_read_NAV()"/>
+ 
+	
+        <call fun="SetActuatorsFromCommands(commands, autopilot_get_mode())"/>
+        <call fun="SetAPThrottleFromCommands()"/>
+      </control>
+      <exception cond="GpsIsLost() && autopilot_in_flight()" deroute="KILL"/>
+    </mode>
+    
+    <!-- HOME (not yet implemented) -->
+    <!--mode name="HOME">
+      <control freq="NAVIGATION_FREQUENCY">
+        <call fun="nav_home()"/>
+      </control>
+      <control>
+
+        <call fun="SetActuatorsFromCommands(commands, autopilot_get_mode())"/>
+        <call fun="SetAPThrottleFromCommands()"/>
+      </control>
+      <exception cond="GpsIsLost()" deroute="KILL"/>
+    </mode-->
+
+    <!-- KILL throttle -->
+    <mode name="KILL">
+      <select cond="$DEFAULT_MODE"/>
+      <select cond="kill_switch_is_on()"/>
+      <on_enter>
+        <call fun="autopilot_set_in_flight(false)"/>
+        <call fun="autopilot_set_motors_on(false)"/>
+      </on_enter>
+      <control>
+        <call fun="SetCommands(commands_failsafe)"/>
+        
+        <call fun="SetAPThrottleFromCommands()"/>
+      </control>
+    </mode>
+
+  </state_machine>
+</autopilot>

@@ -1,0 +1,42 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="serial_com" dir="com">
+  <doc>
+    <description>
+      Decoder for serial protocol
+
+      Data are extracted and sent from a serial link 
+    </description>
+    <configure name="SERIAL_UART" value="UARTX" description="SERIAL on which other device is connected"/>
+    <configure name="SERIAL_BAUD" value="B9600" description="UART Baudrate, default to 115200"/>
+  </doc>
+  <settings>
+    <dl_settings>
+      <dl_settings NAME="SR_Com">
+        <dl_setting MAX="1" MIN="0" STEP="1" VAR="serial_msg_setting" shortname="stream" module="modules/com/serial_com" values="FALSE|TRUE"/>
+      </dl_settings>
+    </dl_settings>
+  </settings>
+  <dep>
+    <depends>uart</depends>
+  </dep>
+  <header>
+    <file name="serial_com.h"/>
+  </header>
+  <init fun="serial_init()"/>
+  <periodic fun="serial_ping()" freq="10" autorun="TRUE"/>
+  <event fun="serial_event()"/>
+  <!--
+  <periodic fun="sonar_report()" freq="5" autorun="FALSE"/>
+  <periodic fun="sonar_send_state()" freq="4" autorun="TRUE"/>
+  <event fun="sonar_event()"/>
+  -->
+  <makefile>
+    <configure name="SERIAL_UART" default = "UART5" case="upper|lower"/> <!-- Revisar estos configure | Mirar gps_ublox.xml -->
+    <configure name="SERIAL_BAUD" default="B9600"/>
+    <file name="serial_com.c"/>
+    <define name="USE_$(SERIAL_UART_UPPER)"/> <!-- for uart_arch-->
+    <define name="SERIAL_DEV" value="$(SERIAL_UART_LOWER)"/>
+    <define name="$(SERIAL_UART_UPPER)_BAUD" value="$(SERIAL_BAUD)"/>
+  </makefile>
+</module>

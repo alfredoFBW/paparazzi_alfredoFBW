@@ -24,6 +24,8 @@
       <message name="OPTIC_FLOW_EST"         period="0.05"/>
       <message name="I2C_ERRORS"             period="4.1"/>
       <message name="UART_ERRORS"            period="3.1"/>
+      <message name="BR_SONAR"               period="1.0"/>
+      <message name="SERIAL_COM"	      period="2.0"/>
     </mode>
 
     <mode name="low" key_press="l">

@@ -1,0 +1,43 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="guidance_boat" dir="guidance" task="control">
+  <doc>
+    <description>
+      UCM boat guidance.
+    </description>
+  </doc>
+
+  <settings name="boat_guidance">
+    <dl_settings>
+      <dl_settings NAME="Boat guidance">
+        <dl_settings NAME="Bearing control">
+          <!-- Ajuste de contantes para el control de bearing (w -> torque formato de comando) -->
+          <dl_setting MAX="10.0" MIN="-10.0" STEP="0.1" VAR="guidance_control.cmd.omega" shortname="boat_guidance_omega"/>
+          <dl_setting MAX="2000.0" MIN="0.0" STEP="1" VAR="guidance_control.kf_bearing" shortname="kf"/>
+        </dl_settings>
+        <dl_settings NAME="Speed control">
+          <!-- Ajustar constantes para el control de velocidad (feed forward) -->
+          <dl_setting MAX="10.0" MIN="-10.0" STEP="0.1" VAR="guidance_control.cmd.speed" shortname="boat_guidance_speed"/>
+          <dl_setting MAX="2000.0" MIN="0.0" STEP="1" VAR="guidance_control.kf_speed" shortname="kf"/>
+          <dl_setting MAX="1000.0" MIN="0.0" STEP="1" VAR="guidance_control.kp" shortname="kp"/>
+          <dl_setting MAX="1000.0" MIN="0.0" STEP="1" VAR="guidance_control.ki" shortname="ki"/>
+        </dl_settings>
+      </dl_settings>
+    </dl_settings>
+  </settings>
+  
+  <dep>
+    <depends>@navigation</depends>
+    <provides>guidance,commands</provides>
+  </dep>
+  
+  <header>
+    <file name="boat_guidance.h"/>
+  </header>
+
+  <init fun="boat_guidance_init()"/>
+  <makefile target="ap|nps" firmware="rover">
+    <file name="boat_guidance.c" dir="$(SRC_FIRMWARE)/guidance"/>
+  </makefile>
+  
+</module>
