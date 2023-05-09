@@ -42,7 +42,8 @@
 #include "modules/datalink/telemetry.h"
 static uint8_t dummy = 0;
 static void send_telemetry(struct transport_tx *trans, struct link_device *dev){
-  pprz_msg_send_INFO_MSG(trans, dev, AC_ID, &dummy ,&guidance_control.bearing, &guidance_control.throttle, &commands[COMMAND_MLEFT], &commands[COMMAND_MRIGHT]);
+  pprz_msg_send_INFO_MSG(trans, dev, AC_ID, &dummy ,&guidance_control.bearing, &guidance_control.throttle, 
+  					     &guidance_control.rc_throttle, &guidance_control.rc_bearing, &commands[COMMAND_MLEFT], &commands[COMMAND_MRIGHT]);
   }					
 #endif
 #endif

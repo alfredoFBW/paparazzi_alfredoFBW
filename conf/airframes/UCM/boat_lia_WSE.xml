@@ -34,6 +34,7 @@
     </module>
    <module name="telemetry" type="xbee_api">
     	<configure name="MODEM_PORT"  value="UART1"/>
+    	<define name="BOAT_DEBUG"     value="TRUE"/>
     </module>
     
     <!-- LIA: pruebas para incluir la brujula. No estoy segura ni de que sea este módulo-->

@@ -1916,8 +1916,14 @@
     </message>
 
     <message name="INFO_MSG" id="215">
-      <field name="msg" type="char[]"/>
-    </message>
+      <field name="msg" type="uint8"/>
+      <field name="bearing" type="float"/>
+      <field name="throttle" type="float"/>
+      <field name="rc_throttle" type="int32"/>
+      <field name="rc_bearing" type="int32"/>      
+      <field name="MLEFT" type="int32"/>
+      <field name="MRIGHT" type="int32"/>
+   </message>
 
     <message name="STAB_ATTITUDE_INDI" id="216">
       <field name="angular_accel_p" type="float"/>
