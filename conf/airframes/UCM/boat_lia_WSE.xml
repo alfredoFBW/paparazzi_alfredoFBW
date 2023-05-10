@@ -83,12 +83,14 @@
   <commands> 
     <axis name="MLEFT"  failsafe_value="0"/>
     <axis name="MRIGHT" failsafe_value="0"/>
+    <axis name="PITCH" failsafe_value="0"/>
   </commands>
 
   <!-- When SetCommandsFromRC -->
   <rc_commands>
     <set command="MLEFT"  value="-@THROTTLE - @ROLL"/>
     <set command="MRIGHT" value="-@THROTTLE + @ROLL"/>
+    <set command="PITCH" value="@PITCH"/>
   </rc_commands>
 
   <!-- When SetActuatorsFromCommands-->

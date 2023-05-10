@@ -29,10 +29,12 @@
 #include "modules/com/serial_com.h"
 #include "mcu_periph/sys_time.h"
 #include "generated/airframe.h"
+#include "generated/modules.h"
 #include "autopilot.h"
 #include "navigation.h"
 #include "state.h"
 #include "modules/sonar/sonar_bluerobotics.h"
+#include "modules/radio_control/radio_control.h"
 
 #include "std.h"
 #include <stdio.h>
@@ -52,6 +54,8 @@ static uint8_t COM_START_BYTE = 0x52; // "R"
 static uint8_t PPZ_SONAR_BYTE = 0x53; // "S"
 static uint8_t PPZ_TELEMETRY_BYTE = 0x54; // "T"
 static uint8_t PPZ_MEASURE_BYTE = 0x4D; // "M"
+static uint8_t PPZ_SONDA_UP_BYTE = 0x55; // "U"
+static uint8_t PPZ_SONDA_DOWN_BYTE = 0x44; // "D"
 
 static uint32_t last_s = 0;  // timestamp in usec when last message was send
 #define SEND_INTERVAL 1000 // time between sending messages
@@ -76,6 +80,8 @@ static uint32_t last_s = 0;  // timestamp in usec when last message was send
 #define TELEMETRY_SN 0
 #define SONDA_RQ 1
 #define MEASURE_SN 2
+#define SONDA_DOWN 3
+#define SONDA_UP 4
 
 //Messages received
 #define SR_OK 79
@@ -109,7 +115,8 @@ static void send_telemetry(struct transport_tx *trans, struct link_device *dev){
   						&serial_snd.distance,
   						&serial_snd.confidence,
   						&serial_snd.error_last,
-  						&serial_snd.msg_length,
+  						&message_type,
+  						//&serial_snd.msg_length,
   						&serial_snd.ck,
   						&serial_msg.msg_id,
   						&serial_msg.status,
@@ -326,6 +333,7 @@ static void serial_parse(uint8_t byte){
 			serial_msg.status++;
 			serial_msg.msgData[2]=byte;		
 			break;
+
 		case SR_PAYLOAD2: //4th byte payload length byte 2
 			if(serial_msg.msg_id==SR_OK){
 				serial_msg.status +=2;
@@ -401,7 +409,7 @@ void serial_event(void)
 }
 
 // Send ping message
-void serial_ping(void)
+void serial_ping()
 {   
  uint32_t now_s = get_sys_time_msec();
  /*
@@ -416,6 +424,14 @@ struct sonar_parse_t *sonar_data;
 uint8_t msg_gps[5]={0,0,0,0,0};
 uint8_t msg_time[2]={0,0};
 uint8_t msg_dist[5]={0,0,0,0,0};
+
+if (radio_control_get(RADIO_PITCH)<0)
+	message_type=SONDA_UP;
+else if (radio_control_get(RADIO_PITCH)>380)
+	message_type=SONDA_DOWN;
+else	
+	message_type=TELEMETRY_SN;
+
 if (now_s > (last_s+ SEND_INTERVAL)) {
     	last_s = now_s; 
 
@@ -531,7 +547,30 @@ if (now_s > (last_s+ SEND_INTERVAL)) {
 				serial_send_msg(serial_snd.msg_length,serial_snd.msgData); 
 
 				break;
-				
+			case SONDA_UP:
+				serial_snd.msg_length=6;
+				serial_snd.msgData[0]=PPZ_START_BYTE;
+				serial_snd.msgData[1]=PPZ_SONDA_UP_BYTE;
+				serial_snd.time=sys_time.nb_sec;
+				message_type=TELEMETRY_SN;
+				ito2h(serial_snd.time, msg_time);
+				serial_snd.msgData[2]=msg_time[0];
+				serial_snd.msgData[3]=msg_time[1];
+				serial_calculateChecksumMsg(serial_snd.msgData, (int)serial_snd.msg_length);
+				serial_send_msg(serial_snd.msg_length,serial_snd.msgData); 
+				break;
+			case SONDA_DOWN:
+				serial_snd.msg_length=6;
+				serial_snd.msgData[0]=PPZ_START_BYTE;
+				serial_snd.msgData[1]=PPZ_SONDA_DOWN_BYTE;
+				serial_snd.time=sys_time.nb_sec;
+				message_type=TELEMETRY_SN;
+				ito2h(serial_snd.time, msg_time);
+				serial_snd.msgData[2]=msg_time[0];
+				serial_snd.msgData[3]=msg_time[1];
+				serial_calculateChecksumMsg(serial_snd.msgData, (int)serial_snd.msg_length);
+				serial_send_msg(serial_snd.msg_length,serial_snd.msgData); 
+				break;
 			default:
 				serial_snd.error_last=10 ;
 				}
