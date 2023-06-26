@@ -115,11 +115,12 @@ static void send_telemetry(struct transport_tx *trans, struct link_device *dev){
   						&serial_snd.distance,
   						&serial_snd.confidence,
   						&serial_snd.error_last,
-  						&message_type,
-  						//&serial_snd.msg_length,
+  						&serial_snd.msg_length,
   						&serial_snd.ck,
-  						&serial_msg.msg_id,
-  						&serial_msg.status,
+  						//&serial_msg.msg_id,
+  						//&serial_msg.status,
+  						&serial_snd.msgData[0],
+  						&serial_snd.msgData[1],
   						&serial_msg.payload_len,
   						&serial_msg.time,
   						&serial_msg.depth,
@@ -425,9 +426,9 @@ uint8_t msg_gps[5]={0,0,0,0,0};
 uint8_t msg_time[2]={0,0};
 uint8_t msg_dist[5]={0,0,0,0,0};
 
-if (radio_control_get(RADIO_PITCH)<0)
+if (radio_control_get(RADIO_GAIN2)>0)
 	message_type=SONDA_UP;
-else if (radio_control_get(RADIO_PITCH)>380)
+else if (radio_control_get(RADIO_GAIN2)<0)
 	message_type=SONDA_DOWN;
 else	
 	message_type=TELEMETRY_SN;
@@ -435,8 +436,8 @@ else
 if (now_s > (last_s+ SEND_INTERVAL)) {
     	last_s = now_s; 
 
-	if(serial_msg.msg_available){
-		serial_read_message();
+//	if(serial_msg.msg_available){
+//		serial_read_message();
 		switch(message_type){
 			case SONDA_RQ:
 				serial_snd.msg_length=6;
@@ -552,7 +553,7 @@ if (now_s > (last_s+ SEND_INTERVAL)) {
 				serial_snd.msgData[0]=PPZ_START_BYTE;
 				serial_snd.msgData[1]=PPZ_SONDA_UP_BYTE;
 				serial_snd.time=sys_time.nb_sec;
-				message_type=TELEMETRY_SN;
+				message_type=PPZ_SONDA_UP_BYTE;
 				ito2h(serial_snd.time, msg_time);
 				serial_snd.msgData[2]=msg_time[0];
 				serial_snd.msgData[3]=msg_time[1];
@@ -564,7 +565,7 @@ if (now_s > (last_s+ SEND_INTERVAL)) {
 				serial_snd.msgData[0]=PPZ_START_BYTE;
 				serial_snd.msgData[1]=PPZ_SONDA_DOWN_BYTE;
 				serial_snd.time=sys_time.nb_sec;
-				message_type=TELEMETRY_SN;
+				message_type=PPZ_SONDA_DOWN_BYTE;
 				ito2h(serial_snd.time, msg_time);
 				serial_snd.msgData[2]=msg_time[0];
 				serial_snd.msgData[3]=msg_time[1];
@@ -575,7 +576,7 @@ if (now_s > (last_s+ SEND_INTERVAL)) {
 				serial_snd.error_last=10 ;
 				}
 
-		}
+//		}
 	}
 }
 
