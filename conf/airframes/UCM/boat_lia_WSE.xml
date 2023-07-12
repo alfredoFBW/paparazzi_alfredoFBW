@@ -75,8 +75,9 @@
   <!-- COMMANDS SECTION ..................................................................... -->
   <servos> 
     <!-- "no" 0 and 1 0, our f405 don't have power pin for these pwm outputs... -->
-    <servo name="MOTOR_LEFT"  no="2" min="1100" neutral="1500" max="2900"/>
-    <servo name="MOTOR_RIGHT" no="3" min="1100" neutral="1500" max="2900"/>
+    <!-- "changed limits following manufacturer instructions-->
+    <servo name="MOTOR_LEFT"  no="2" min="1100" neutral="1500" max="1900"/>
+    <servo name="MOTOR_RIGHT" no="3" min="1100" neutral="1500" max="1900"/>
   </servos> 
   
   <!-- Low level commands -->
@@ -87,9 +88,10 @@
   </commands>
 
   <!-- When SetCommandsFromRC -->
+  <!-- Positive Throttle when motors mounted properly-->
   <rc_commands>
-    <set command="MLEFT"  value="-@THROTTLE - @ROLL"/>
-    <set command="MRIGHT" value="-@THROTTLE + @ROLL"/>
+    <set command="MLEFT"  value="@THROTTLE + @ROLL"/>
+    <set command="MRIGHT" value="@THROTTLE - @ROLL"/>
     <set command="GAIN2" value="@GAIN2"/>
   </rc_commands>
 
