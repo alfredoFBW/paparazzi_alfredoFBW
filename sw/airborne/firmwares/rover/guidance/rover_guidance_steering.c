@@ -34,8 +34,12 @@
 
 #include "filters/pid.h" // Used for p+i speed controller
 
+// Needed for get_sys_time_ms()
+#include "modules/datalink/telemetry.h"
 #include <math.h>
 #include <stdio.h>
+
+#include "modules/guidance/gvf_common.h"
 
 // Guidance control main variables
 rover_ctrl guidance_control;
@@ -44,6 +48,10 @@ static struct PID_f rover_pid;
 static float time_step;
 static float last_speed_cmd;
 static uint8_t last_ap_mode;
+
+// Here the time in order to stop
+static uint32_t rover_time = 0;
+static int reset_time = 0;
 
 /** INIT function **/
 void rover_guidance_steering_init(void)
@@ -93,7 +101,7 @@ void rover_guidance_steering_speed_ctrl(void)
     last_speed_cmd = guidance_control.cmd.speed;
     //reset_pid_f(&rover_pid);
   }
-
+  rover_guidance_steering_obtain_setpoint();
   // - Updating PID
   guidance_control.speed_error = (guidance_control.cmd.speed - stateGetHorizontalSpeedNorm_f());
   update_pid_f(&rover_pid, guidance_control.speed_error, time_step);
@@ -101,6 +109,30 @@ void rover_guidance_steering_speed_ctrl(void)
   guidance_control.throttle = BoundThrottle(guidance_control.kf*guidance_control.cmd.speed + get_pid_f(&rover_pid));
 }
 
+// Obtains setpoint 
+// Here is where the rover stops
+void rover_guidance_steering_obtain_setpoint(void)
+{
+
+	//float kappa   = gvf_c_info.kappa;
+	//float ori_err = gvf_c_info.ori_err;
+
+	// Setpoint to zero if rover must stay still
+	if((gvf_c_stopwp.stay_still) && (!reset_time))
+	{
+		guidance_control.cmd.speed = 0;
+		rover_time = get_sys_time_msec();
+		reset_time = 1;
+	}
+	else if((gvf_c_stopwp.stay_still) && (reset_time))
+	{
+		if( (get_sys_time_msec() - rover_time) >= 1000*gvf_c_stopwp.wait_time){
+			reset_time = 0;
+			gvf_c_stopwp.stay_still = 0;
+		}	
+	}
+
+}
 
 /** PID RESET function**/
 void rover_guidance_steering_pid_reset(void)

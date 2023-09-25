@@ -1,74 +1,88 @@
 <!DOCTYPE airframe SYSTEM "../airframe.dtd">
 
-<airframe name="Rover Steering">
+<airframe name="boat">
 
-  <firmware name="rover">
+  <firmware name="rover"> 
     <autopilot name="rover_steering.xml"/>
+    <define name="USE_INS_NAV_INIT"/>
 
     <target name="ap" board="matek_f765_wing">
       <configure name="PERIODIC_FREQUENCY" value="100"/>
       <module name="radio_control" type="sbus">
-        <!--configure name="SBUS_PORT" value="UART6"/-->
+        <configure name="SBUS_PORT" value="UART2"/>
       </module>
     </target>
     
     <target name="nps" board="pc">
       <module name="radio_control" type="ppm"/>
-      <module name="fdm"           type="rover"/> <!-- NPS_FDM rover physics!! -->
+      <module name="fdm"           type="rover"/>
       <define name="NPS_BYPASS_AHRS" value="TRUE"/>
       <define name="NPS_BYPASS_INS"  value="TRUE"/>
     </target>    
     
-    <module name="actuators" type="pwm"/>
-    <module name="telemetry" type="xbee_api"/>
-    
-    <!-- Same board module as matek_f765_wind but without OSD -->
+    <!-- Same board module as matek_f765_wing but without OSD -->
     <module name="board" type="matek_f765_car"/> <!-- IMU included -->
+    
+    <module name="actuators" type="pwm"/>
 
-    <!-- GPS_BAUD can be manually configured, but gps_ubx_ucenter automatically do that -->
     <module name="gps" type="ublox">
-      <!--configure name="GPS_BAUD" value="B115200"/-->
+    	<configure name="GPS_PORT"  value="UART4"/>
     </module>
     <module name="gps_ubx_ucenter"/>
-
-    <module name="ins"/>
-
-    <!-- Either of this AHRS works fine with our rover -->
+    
+    
+    <module name="ins"/> <!-- Speed estimated from GPS -->
+    
     <module name="ahrs" type="float_dcm">
       <define name="AHRS_FLOAT_MIN_SPEED_GPS_COURSE" value="0.1"/>
     </module>
-
-    <!--module name="ahrs" type="float_cmpl_quat">
-      <define name="AHRS_HEADING_UPDATE_GPS_MIN_SPEED" value="0.1"/>
-      <define name="AHRS_USE_GPS_HEADING" value="TRUE"/>
-      <configure name="USE_MAGNETOMETER" value="0"/>
-    </module-->
-
-    <module name="nav"  type="rover_base">
-      <define name="ROVER_BASE_SEND_TRAJECTORY" value="FALSE"/>
-    </module>
-    <module name="gvf"  type="module">
-      <define name="GVF_OCAML_GCS" value="FALSE"/>
+    
+   <module name="telemetry" type="xbee_api">
+    	<configure name="MODEM_PORT"  value="UART1"/>
     </module>
     
-    <module name="gvf_parametric"/>
+    <!-- Compass ublox m8n -->
+    <module name="mag_hmc58xx">
+    	<configure name="MAG_HMC58XX_I2C_DEV" value="I2C1"/>
+    	<define  name="MODULE_HMC58XX_SYNC_SEND" value="TRUE"/>
+    	<define name="MODULE_HMC58XX_UPDATE_AHRS" value="TRUE"/>
+    	
+    </module>
+    
+    
+    <!-- Our modules: Lidar -->
+    <!--LIDAR-->
+    <!--module name="lidar" type="tfmini">
+    	<configure name="TFMINI_PORT" value="UART6"/>
+    	<configure name="TFMINI_BAUD" value="B115200"/>
+    </module-->
 
+    <module name="nav"  type="rover_base"> 
+      <define name="ROVER_BASE_SEND_TRAJECTORY" value="FALSE"/>
+    </module>
+	    
+    <module name="gvf" type="module"/>
+    <module name="gvf_parametric">
+    	<define name="MOV_AVG_GVF_M" value="20"/>
+    </module>
+    
     <module name="guidance" type="rover_steering">
       <define name="MAX_DELTA"            value="15.0"/>
       <define name="DRIVE_SHAFT_DISTANCE" value="0.25"/>
       <define name="SR_MEASURED_KF"       value="1400.0"/>
       <define name="MIN_CMD_SHUT"         value="3800"/>
       <define name="MAX_CMD_SHUT"         value="1350"/>
+      <define name="MOV_AVG_M"            value="20"/>
     </module>
 
   </firmware>
 
 
   <!-- COMMANDS SECTION ..................................................................... -->
-  <servos> 
+   <servos> 
     <!-- "no" 1 and 2 but no 0 because our board don't have S0 actuator entry... -->
-    <servo name="MOTOR_THROTTLE" no="1" min="1000" neutral="1500" max="2000"/>
-    <servo name="MOTOR_STEERING" no="2" min="1000" neutral="1500" max="2000"/>
+    <servo name="MOTOR_THROTTLE" no="2" min="1000" neutral="1500" max="2000"/>
+    <servo name="MOTOR_STEERING" no="3" min="1000" neutral="1500" max="2000"/>
   </servos> 
   
   <!-- Low level commands (PWM signal) -->
@@ -95,6 +109,40 @@
     <define name="BODY_TO_IMU_PHI"   value="0." unit="deg"/>
     <define name="BODY_TO_IMU_THETA" value="0." unit="deg"/>
     <define name="BODY_TO_IMU_PSI"   value="0." unit="deg"/>
+    <!-- ....CALIBRATION 2022/06/07 .................................................... -->
+    <!--define name="ACCEL_X_NEUTRAL" value="88"/>
+    <define name="ACCEL_Y_NEUTRAL" value="-12"/>
+    <define name="ACCEL_Z_NEUTRAL" value="-293"/>
+    <define name="ACCEL_X_SENS" value="4.899015375528249" integer="16"/>
+    <define name="ACCEL_Y_SENS" value="4.87923406429433" integer="16"/>
+    <define name="ACCEL_Z_SENS" value="4.778923416058284" integer="16"/>
+    -->
+    
+    <!-- ....CALIBRATION 2023/12/04 .................................................... -->
+    <define name="ACCEL_X_NEUTRAL" value="34"/>
+    <define name="ACCEL_Y_NEUTRAL" value="13"/>
+    <define name="ACCEL_Z_NEUTRAL" value="-217"/>
+    <define name="ACCEL_X_SENS" value="4.910468072567044" integer="16"/>
+    <define name="ACCEL_Y_SENS" value="4.87915023807254" integer="16"/>
+    <define name="ACCEL_Z_SENS" value="4.787109540792222" integer="16"/>
+
+    <!-- ......CALIBRATION 2022/07/30..................................................... -->
+    <define name="MAG_X_NEUTRAL" value="256"/>
+    <define name="MAG_Y_NEUTRAL" value="-412"/>
+    <define name="MAG_Z_NEUTRAL" value="71"/>
+    <define name="MAG_X_SENS" value="3.707420822119781" integer="16"/>
+    <define name="MAG_Y_SENS" value="4.148937385955166" integer="16"/>
+    <define name="MAG_Z_SENS" value="3.242411432686237" integer="16"/>
+
+<!-- LAST CALIBRATION
+    <define name="MAG_X_NEUTRAL" value="263"/>
+    <define name="MAG_Y_NEUTRAL" value="-429"/>
+    <define name="MAG_Z_NEUTRAL" value="606"/>
+    <define name="MAG_X_SENS" value="7.593931788741687" integer="16"/>
+    <define name="MAG_Y_SENS" value="7.526016920835691" integer="16"/>
+    <define name="MAG_Z_SENS" value="10.776584762252018" integer="16"/>
+-->
+
   </section>
 
   <section name="AHRS" prefix="AHRS_">
@@ -111,14 +159,16 @@
     <define name="MODE_AUTO1"  value="AP_MODE_CRUISER"/> 
     <define name="MODE_AUTO2"  value="AP_MODE_NAV"/> <!-- Ignoring radio_control.values -->
   </section>
-
+  
   <section name="SIMULATOR" prefix="NPS_">
+    <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>
   </section>
   
+  
   <section name="BAT">
-    <define name="CATASTROPHIC_BAT_LEVEL"    value="7.35" unit="V"/>
-    <define name="CRITIC_BAT_LEVEL"          value="7.40" unit="V"/>
-    <define name="LOW_BAT_LEVEL"             value="7.45" unit="V"/>
+    <define name="CATASTROPHIC_BAT_LEVEL"    value="6.35" unit="V"/>
+    <define name="CRITIC_BAT_LEVEL"          value="6.70" unit="V"/>
+    <define name="LOW_BAT_LEVEL"             value="7.05" unit="V"/>
     <define name="MAX_BAT_LEVEL"             value="8.44" unit="V"/>
     <define name="MILLIAMP_AT_FULL_THROTTLE" value="1800" unit="mA"/>
     <define name="MILLIAMP_AT_IDLE_THROTTLE" value="1000" unit="mA"/>
