@@ -23,11 +23,15 @@
 /** @file gvf_line.h
  *
  *  Guidance algorithm based on vector fields
- *  2D straight line trajectory
+ *  2D straight line trajectory and line trajectory array
  */
 
 #ifndef GVF_LINE_H
 #define GVF_LINE_H
+
+#ifndef GVF_N_LINES
+#define GVF_N_LINES 6
+#endif
 
 #include "modules/guidance/gvf/gvf.h"
 
@@ -53,9 +57,26 @@ typedef struct {
   float d2;
 } gvf_seg_par;
 
+/** @typedef gvf_li_lines
+* @brief Array of lines 
+* @param A Line is defined using 2 points 
+* (p1x,p1y), (p2x,p2y)
+*/
+typedef struct {
+  float p1x;
+  float p1y;
+  float p2x;
+  float p2y;
+  float phi;
+  float grad[2];
+  float Hess[2][2];
+} gvf_li_line;
+
+
 extern gvf_li_par gvf_line_par;
 extern gvf_seg_par gvf_segment_par;
 
 extern void gvf_line_info(float *phi, struct gvf_grad *, struct gvf_Hess *);
+extern void gvf_line_array_info(float *phi, struct gvf_grad *, struct gvf_Hess *, int which_line);
 
 #endif // GVF_LINE_H
