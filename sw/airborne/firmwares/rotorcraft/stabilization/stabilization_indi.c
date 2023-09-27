@@ -66,6 +66,15 @@
 #define STABILIZATION_INDI_FILT_CUTOFF_R 20.0
 #endif
 
+// Default is WLS
+#ifndef STABILIZATION_INDI_ALLOCATION_PSEUDO_INVERSE
+#define STABILIZATION_INDI_ALLOCATION_PSEUDO_INVERSE FALSE
+#endif
+
+#ifndef INDI_FILTER_RATES_SECOND_ORDER
+#define INDI_FILTER_RATES_SECOND_ORDER FALSE
+#endif
+
 // Airspeed [m/s] at which the forward flight throttle limit is used instead of
 // the hover throttle limit.
 #ifndef INDI_HROTTLE_LIMIT_AIRSPEED_FWD
@@ -83,7 +92,9 @@ static void lms_estimation(void);
 static void get_actuator_state(void);
 static void calc_g1_element(float dx_error, int8_t i, int8_t j, float mu_extra);
 static void calc_g2_element(float dx_error, int8_t j, float mu_extra);
+#if STABILIZATION_INDI_ALLOCATION_PSEUDO_INVERSE
 static void calc_g1g2_pseudo_inv(void);
+#endif
 static void bound_g_mat(void);
 
 int32_t stabilization_att_indi_cmd[COMMANDS_NB];
@@ -145,6 +156,7 @@ float indi_Wu[INDI_NUM_ACT] = {[0 ... INDI_NUM_ACT-1] = 1.0};
 // variables needed for control
 float actuator_state_filt_vect[INDI_NUM_ACT];
 struct FloatRates angular_accel_ref = {0., 0., 0.};
+struct FloatRates angular_rate_ref = {0., 0., 0.};
 float angular_acceleration[3] = {0., 0., 0.};
 float actuator_state[INDI_NUM_ACT];
 float indi_u[INDI_NUM_ACT];
@@ -177,9 +189,10 @@ int32_t num_thrusters;
 
 struct Int32Eulers stab_att_sp_euler;
 struct Int32Quat   stab_att_sp_quat;
+struct Int32Rates  stab_att_ff_rates;
 
 abi_event rpm_ev;
-static void rpm_cb(uint8_t sender_id, uint16_t *rpm, uint8_t num_act);
+static void rpm_cb(uint8_t sender_id, struct rpm_act_t *rpm_msg, uint8_t num_act);
 
 abi_event thrust_ev;
 static void thrust_cb(uint8_t sender_id, float thrust_increment);
@@ -202,8 +215,11 @@ Butterworth2LowPass estimation_input_lowpass_filters[INDI_NUM_ACT];
 Butterworth2LowPass measurement_lowpass_filters[3];
 Butterworth2LowPass estimation_output_lowpass_filters[3];
 Butterworth2LowPass acceleration_lowpass_filter;
+#if INDI_FILTER_RATES_SECOND_ORDER
+Butterworth2LowPass rates_filt_so[3];
+#else
 static struct FirstOrderLowPass rates_filt_fo[3];
-
+#endif
 struct FloatVect3 body_accel_f;
 
 void init_filters(void);
@@ -233,6 +249,34 @@ static void send_ahrs_ref_quat(struct transport_tx *trans, struct link_device *d
                               &(quat->qy),
                               &(quat->qz));
 }
+
+static void send_att_full_indi(struct transport_tx *trans, struct link_device *dev)
+{
+  struct FloatRates *body_rates = stateGetBodyRates_f();
+  struct Int32Vect3 *body_accel_i = stateGetAccelBody_i();
+  struct FloatVect3 body_accel_f_telem;
+  ACCELS_FLOAT_OF_BFP(body_accel_f_telem, *body_accel_i);
+  float zero = 0;
+  pprz_msg_send_STAB_ATTITUDE_INDI(trans, dev, AC_ID,
+                                        &body_accel_f_telem.x,    // input lin.acc
+                                        &body_accel_f_telem.y,
+                                        &body_accel_f_telem.z,
+                                        &body_rates->p,           // rate
+                                        &body_rates->q,
+                                        &body_rates->r,
+                                        &angular_rate_ref.p,      // rate.sp
+                                        &angular_rate_ref.q,
+                                        &angular_rate_ref.r,
+                                        &angular_acceleration[0], // ang.acc
+                                        &angular_acceleration[1],
+                                        &angular_acceleration[2],
+                                        &angular_accel_ref.p,     // ang.acc.sp
+                                        &angular_accel_ref.q,
+                                        &angular_accel_ref.r,
+                                        &zero, &zero,             // eff.mat
+                                        &zero, &zero,
+                                        INDI_NUM_ACT, indi_u);    // out
+}
 #endif
 
 /**
@@ -252,9 +296,14 @@ void stabilization_indi_init(void)
   float_vect_zero(estimation_rate_dd, INDI_NUM_ACT);
   float_vect_zero(actuator_state_filt_vect, INDI_NUM_ACT);
 
-  //Calculate G1G2_PSEUDO_INVERSE
+  //Calculate G1G2
   sum_g1_g2();
+
+  // Do not compute if not needed
+  #if STABILIZATION_INDI_ALLOCATION_PSEUDO_INVERSE
+  //Calculate G1G2_PSEUDO_INVERSE
   calc_g1g2_pseudo_inv();
+  #endif
 
   int8_t i;
   // Initialize the array of pointers to the rows of g1g2
@@ -278,6 +327,7 @@ void stabilization_indi_init(void)
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_INDI_G, send_indi_g);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_AHRS_REF_QUAT, send_ahrs_ref_quat);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_STAB_ATTITUDE_INDI, send_att_full_indi);
 #endif
 }
 
@@ -323,12 +373,21 @@ void init_filters(void)
   // Filtering of the accel body z
   init_butterworth_2_low_pass(&acceleration_lowpass_filter, tau_est, sample_time, 0.0);
 
+#if INDI_FILTER_RATES_SECOND_ORDER
+  tau = 1.0 / (2.0 * M_PI * STABILIZATION_INDI_FILT_CUTOFF_P);
+  init_butterworth_2_low_pass(&rates_filt_so[0], tau, sample_time, 0.0);
+  tau = 1.0 / (2.0 * M_PI * STABILIZATION_INDI_FILT_CUTOFF_Q);
+  init_butterworth_2_low_pass(&rates_filt_so[1], tau, sample_time, 0.0);
+  tau = 1.0 / (2.0 * M_PI * STABILIZATION_INDI_FILT_CUTOFF_R);
+  init_butterworth_2_low_pass(&rates_filt_so[2], tau, sample_time, 0.0);
+#else
   // Init rate filter for feedback
   float time_constants[3] = {1.0 / (2 * M_PI * STABILIZATION_INDI_FILT_CUTOFF_P), 1.0 / (2 * M_PI * STABILIZATION_INDI_FILT_CUTOFF_Q), 1.0 / (2 * M_PI * STABILIZATION_INDI_FILT_CUTOFF_R)};
 
   init_first_order_low_pass(&rates_filt_fo[0], time_constants[0], sample_time, stateGetBodyRates_f()->p);
   init_first_order_low_pass(&rates_filt_fo[1], time_constants[1], sample_time, stateGetBodyRates_f()->q);
   init_first_order_low_pass(&rates_filt_fo[2], time_constants[2], sample_time, stateGetBodyRates_f()->r);
+#endif
 }
 
 /**
@@ -355,6 +414,7 @@ void stabilization_indi_set_rpy_setpoint_i(struct Int32Eulers *rpy)
   stab_att_sp_euler = *rpy;
 
   int32_quat_of_eulers(&stab_att_sp_quat, &stab_att_sp_euler);
+  INT_RATES_ZERO(stab_att_ff_rates);
 }
 
 /**
@@ -364,6 +424,7 @@ void stabilization_indi_set_quat_setpoint_i(struct Int32Quat *quat)
 {
   stab_att_sp_quat = *quat;
   int32_eulers_of_quat(&stab_att_sp_euler, quat);
+  INT_RATES_ZERO(stab_att_ff_rates);
 }
 
 /**
@@ -387,6 +448,7 @@ void stabilization_indi_set_earth_cmd_i(struct Int32Vect2 *cmd, int32_t heading)
   stab_att_sp_euler.theta = -(c_psi * cmd->x + s_psi * cmd->y) >> INT32_TRIG_FRAC;
 
   quat_from_earth_cmd_i(&stab_att_sp_quat, cmd, heading);
+  INT_RATES_ZERO(stab_att_ff_rates);
 }
 
 /**
@@ -398,6 +460,7 @@ void stabilization_indi_set_stab_sp(struct StabilizationSetpoint *sp)
 {
   stab_att_sp_euler = stab_sp_to_eulers_i(sp);
   stab_att_sp_quat = stab_sp_to_quat_i(sp);
+  stab_att_ff_rates = stab_sp_to_rates_i(sp);
 }
 
 /**
@@ -433,17 +496,29 @@ void stabilization_indi_rate_run(struct FloatRates rate_sp, bool in_flight)
   //Note that due to the delay, the PD controller may need relaxed gains.
   struct FloatRates rates_filt;
 #if STABILIZATION_INDI_FILTER_ROLL_RATE
+#if INDI_FILTER_RATES_SECOND_ORDER
+  rates_filt.p = update_butterworth_2_low_pass(&rates_filt_so[0], body_rates->p);
+#else
   rates_filt.p = update_first_order_low_pass(&rates_filt_fo[0], body_rates->p);
+#endif
 #else
   rates_filt.p = body_rates->p;
 #endif
 #if STABILIZATION_INDI_FILTER_PITCH_RATE
+#if INDI_FILTER_RATES_SECOND_ORDER
+  rates_filt.q = update_butterworth_2_low_pass(&rates_filt_so[1], body_rates->q);
+#else
   rates_filt.q = update_first_order_low_pass(&rates_filt_fo[1], body_rates->q);
+#endif
 #else
   rates_filt.q = body_rates->q;
 #endif
 #if STABILIZATION_INDI_FILTER_YAW_RATE
+#if INDI_FILTER_RATES_SECOND_ORDER
+  rates_filt.r = update_butterworth_2_low_pass(&rates_filt_so[2], body_rates->r);
+#else
   rates_filt.r = update_first_order_low_pass(&rates_filt_fo[2], body_rates->r);
+#endif
 #else
   rates_filt.r = body_rates->r;
 #endif
@@ -615,6 +690,14 @@ void stabilization_indi_attitude_run(struct Int32Quat quat_sp, bool in_flight)
   rate_sp.p = indi_gains.att.p * att_fb.x / indi_gains.rate.p;
   rate_sp.q = indi_gains.att.q * att_fb.y / indi_gains.rate.q;
   rate_sp.r = indi_gains.att.r * att_fb.z / indi_gains.rate.r;
+
+  // Add feed-forward rates to the attitude feedback part
+  RATES_ADD(rate_sp, stab_att_ff_rates);
+
+  // Store for telemetry
+  angular_rate_ref.p = rate_sp.p;
+  angular_rate_ref.q = rate_sp.q;
+  angular_rate_ref.r = rate_sp.r;
 
   // Possibly we can use some bounding here
   /*BoundAbs(rate_sp.r, 5.0);*/
@@ -802,6 +885,7 @@ void sum_g1_g2(void) {
   }
 }
 
+#if STABILIZATION_INDI_ALLOCATION_PSEUDO_INVERSE
 /**
  * Function that calculates the pseudo-inverse of (G1+G2).
  * Make sure to sum of G1 and G2 before running this!
@@ -845,15 +929,21 @@ void calc_g1g2_pseudo_inv(void)
     }
   }
 }
+#endif
 
-static void rpm_cb(uint8_t __attribute__((unused)) sender_id, uint16_t UNUSED *rpm, uint8_t UNUSED num_act)
+static void rpm_cb(uint8_t sender_id UNUSED, struct rpm_act_t *rpm_msg UNUSED, uint8_t num_act UNUSED)
 {
 #if INDI_RPM_FEEDBACK
+PRINT_CONFIG_MSG("INDI_RPM_FEEDBACK");
   int8_t i;
   for (i = 0; i < num_act; i++) {
-    act_obs[i] = (rpm[i] - get_servo_min(i));
-    act_obs[i] *= (MAX_PPRZ / (float)(get_servo_max(i) - get_servo_min(i)));
-    Bound(act_obs[i], 0, MAX_PPRZ);
+    // Sanity check that index is valid
+    if (rpm_msg[i].actuator_idx < INDI_NUM_ACT) {
+      int8_t idx = rpm_msg[i].actuator_idx;
+      act_obs[idx] = (rpm_msg[i].rpm - get_servo_min(idx));
+      act_obs[idx] *= (MAX_PPRZ / (float)(get_servo_max(idx) - get_servo_min(idx)));
+      Bound(act_obs[idx], 0, MAX_PPRZ);
+    }
   }
 #endif
 }

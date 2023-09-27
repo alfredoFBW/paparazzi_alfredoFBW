@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2017 Gautier Hattenberger <gautier.hattenberger@enac.fr>
+ * Copyright (C) 2023 Dennis van Wijngaarden <D.C.vanWijngaarden@tudelft.nl>
  *
- * This file is part of paparazzi.
+ * This file is part of paparazzi
  *
  * paparazzi is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,27 +18,19 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-/**
- * @file firmwares/rotorcraft/autopilot_firmware.h
- *
- * Rotorcraft specific autopilot interface
- * and initialization
+/** @file "modules/nav/ground_detect_sensor.h"
+ * @author Dennis van Wijngaarden <D.C.vanWijngaarden@tudelft.nl>
+ * Ground detection module
  */
 
-#ifndef AUTOPILOT_FIRMWARE_H
-#define AUTOPILOT_FIRMWARE_H
+#ifndef GROUND_DETECT_SENSOR_H
+#define GROUND_DETECT_SENSOR_H
 
 #include "std.h"
-#include "autopilot.h"
 
-extern uint8_t autopilot_mode_auto2;
+extern void ground_detect_sensor_init(void);
+extern void ground_detect_sensor_periodic(void);
 
-// Detect the ground and set NavGroundDetect() to true
-extern bool autopilot_ground_detection(void);
+extern bool ground_detect(void);
 
-// Detect the end of in_flight and stop integrators in control loops
-extern bool autopilot_in_flight_end_detection(bool motors_on);
-
-extern void autopilot_firmware_init(void);
-
-#endif /* AUTOPILOT_FIRMWARE_H */
+#endif  // GROUND_DETECT_SENSOR_H

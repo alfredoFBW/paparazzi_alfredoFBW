@@ -220,7 +220,6 @@ void guidance_indi_init(void)
  */
 void guidance_indi_enter(void) {
   /*Obtain eulers with zxy rotation order*/
-  struct FloatEulers eulers_zxy;
   float_eulers_of_quat_zxy(&eulers_zxy, stateGetNedToBodyQuat_f());
   nav.heading = eulers_zxy.psi;
 
@@ -313,7 +312,6 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   //Calculate roll,pitch and thrust command
   MAT33_VECT3_MUL(euler_cmd, Ga_inv, a_diff);
 
-  //printf("abi thrust %f\n", euler_cmd.z);
   AbiSendMsgTHRUST(THRUST_INCREMENT_ID, euler_cmd.z);
 
   // Coordinated turn
@@ -352,6 +350,16 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   // Add sideslip correction
   omega -= accely_filt.o[0]*FWD_SIDESLIP_GAIN;
 #endif
+
+  // We can pre-compute the required rates to achieve this turn rate:
+  // NOTE: there *should* not be any problems possible with Euler singularities here
+  struct FloatEulers *euler_zyx = stateGetNedToBodyEulers_f();
+
+  struct FloatRates ff_rates;
+
+  ff_rates.p = -sinf(euler_zyx->theta) * omega;
+  ff_rates.q =  cosf(euler_zyx->theta) * sinf(euler_zyx->phi) * omega;
+  ff_rates.r =  cosf(euler_zyx->theta) * cosf(euler_zyx->phi) * omega;
 
   // For a hybrid it is important to reduce the sideslip, which is done by changing the heading.
   // For experiments, it is possible to fix the heading to a different value.
@@ -401,7 +409,7 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   float_quat_of_eulers_zxy(&sp_quat, &guidance_euler_cmd);
   float_quat_normalize(&sp_quat);
 
-  return stab_sp_from_quat_f(&sp_quat);
+  return stab_sp_from_quat_ff_rates_f(&sp_quat, &ff_rates);
 }
 
 // compute accel setpoint from speed setpoint (use global variables ! FIXME)
@@ -511,7 +519,6 @@ static struct FloatVect3 compute_accel_from_speed_sp(void)
   /*BoundAbs(sp_accel.y, 3.0 + airspeed/guidance_indi_max_airspeed*6.0);*/
   BoundAbs(accel_sp.z, 3.0);
 
-  //printf("accel_sp %f %f %f\n", accel_sp.x, accel_sp.y, accel_sp.z);
   return accel_sp;
 }
 

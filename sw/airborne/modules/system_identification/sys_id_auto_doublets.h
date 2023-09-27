@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2017 Gautier Hattenberger <gautier.hattenberger@enac.fr>
+ * Copyright (C) 2023 Dennis van Wijngaarden <D.C.vanWijngaarden@tudelft.nl>
  *
- * This file is part of paparazzi.
+ * This file is part of paparazzi
  *
  * paparazzi is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,27 +18,20 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-/**
- * @file firmwares/rotorcraft/autopilot_firmware.h
- *
- * Rotorcraft specific autopilot interface
- * and initialization
+/** @file "modules/system_identification/sys_id_auto_doublets.h"
+ * @author Dennis van Wijngaarden <D.C.vanWijngaarden@tudelft.nl>
+ * Module that automatically runs a doublet program for the rotating wing drone
  */
 
-#ifndef AUTOPILOT_FIRMWARE_H
-#define AUTOPILOT_FIRMWARE_H
+#ifndef SYS_ID_AUTO_DOUBLETS_H
+#define SYS_ID_AUTO_DOUBLETS_H
 
 #include "std.h"
-#include "autopilot.h"
 
-extern uint8_t autopilot_mode_auto2;
+extern bool sys_id_auto_doublets_activated;
 
-// Detect the ground and set NavGroundDetect() to true
-extern bool autopilot_ground_detection(void);
+extern void init_sys_id_auto_doublets(void);
+extern void periodic_sys_id_auto_doublets(void);
+extern void sys_id_auto_doublets_on_activation(uint8_t active);
 
-// Detect the end of in_flight and stop integrators in control loops
-extern bool autopilot_in_flight_end_detection(bool motors_on);
-
-extern void autopilot_firmware_init(void);
-
-#endif /* AUTOPILOT_FIRMWARE_H */
+#endif  // SYS_ID_AUTO_DOUBLETS_H

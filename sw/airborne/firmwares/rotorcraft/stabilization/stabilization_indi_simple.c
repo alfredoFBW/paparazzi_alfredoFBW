@@ -92,6 +92,7 @@
 
 struct Int32Eulers stab_att_sp_euler;
 struct Int32Quat   stab_att_sp_quat;
+struct Int32Rates  stab_att_ff_rates;
 
 static struct FirstOrderLowPass rates_filt_fo[3];
 
@@ -148,18 +149,25 @@ static void send_att_indi(struct transport_tx *trans, struct link_device *dev)
   struct FloatRates g1_disp;
   RATES_SMUL(g1_disp, indi.est.g1, INDI_EST_SCALE);
   float g2_disp = indi.est.g2 * INDI_EST_SCALE;
+  float zero = 0;
 
   pprz_msg_send_STAB_ATTITUDE_INDI(trans, dev, AC_ID,
-                                   &indi.rate_d[0],
+                                   &zero, &zero, &zero,         // input lin.acc
+                                   &indi.rate[0].o[0],          // rate
+                                   &indi.rate[1].o[0],
+                                   &indi.rate[2].o[0],
+                                   &zero, &zero, &zero,         // rate.ref
+                                   &indi.rate_d[0],             // ang.acc = rate.diff
                                    &indi.rate_d[1],
                                    &indi.rate_d[2],
-                                   &indi.angular_accel_ref.p,
+                                   &indi.angular_accel_ref.p,   // ang.acc.ref
                                    &indi.angular_accel_ref.q,
                                    &indi.angular_accel_ref.r,
-                                   &g1_disp.p,
+                                   &g1_disp.p,                  // matrix
                                    &g1_disp.q,
                                    &g1_disp.r,
-                                   &g2_disp);
+                                   &g2_disp,
+                                   0, &zero);                   // outputs
 }
 
 static void send_ahrs_ref_quat(struct transport_tx *trans, struct link_device *dev)
@@ -297,6 +305,7 @@ void stabilization_indi_set_stab_sp(struct StabilizationSetpoint *sp)
 {
   stab_att_sp_euler = stab_sp_to_eulers_i(sp);
   stab_att_sp_quat = stab_sp_to_quat_i(sp);
+  stab_att_ff_rates = stab_sp_to_rates_i(sp);
 }
 
 /**
@@ -477,6 +486,9 @@ void stabilization_indi_attitude_run(struct Int32Quat quat_sp, bool in_flight __
   rate_sp.p = indi.gains.att.p * att_fb.x / indi.gains.rate.p;
   rate_sp.q = indi.gains.att.q * att_fb.y / indi.gains.rate.q;
   rate_sp.r = indi.gains.att.r * att_fb.z / indi.gains.rate.r;
+
+  // Add feed-forward rates to the attitude feedback part
+  RATES_ADD(rate_sp, stab_att_ff_rates);
 
   /* compute the INDI command */
   stabilization_indi_rate_run(rate_sp, in_flight);
