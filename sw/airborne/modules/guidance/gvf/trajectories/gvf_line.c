@@ -59,6 +59,39 @@
 gvf_li_par gvf_line_par = {GVF_LINE_KE, GVF_LINE_KN, GVF_LINE_HEADING};
 gvf_seg_par gvf_segment_par = {GVF_SEGMENT_D1, GVF_SEGMENT_D2};
 
+// Must be defined in gvf.c
+extern gvf_li_line gvf_lines_array[GVF_N_LINES];
+
+void gvf_line_array_info(float *phi, struct gvf_grad *grad, struct gvf_Hess *hess, int which_line)
+{
+  struct EnuCoor_f *p = stateGetPositionEnu_f();
+  float px = p->x;
+  float py = p->y;
+  float x0,x1,y0,y1;
+  // Must chose in which segment are we, that must be changed in gvf.c
+  for(int k = 0; k < GVF_N_LINES; k++){
+  	x0 = gvf_lines_array[k].p1x;
+  	x1 = gvf_lines_array[k].p2x;
+  	y0 = gvf_lines_array[k].p1y;
+  	y1 = gvf_lines_array[k].p2y;
+  	
+  	gvf_lines_array[k].phi = (py - y0)*(x1-x0) - (y1-y0)*(px - x0);
+  	gvf_lines_array[k].grad[0] = -(y1-y0);
+  	gvf_lines_array[k].grad[1] = (x1-x0);
+  	gvf_lines_array[k].Hess[0][0] = 0;
+   	gvf_lines_array[k].Hess[0][0] = 0;
+    	gvf_lines_array[k].Hess[0][0] = 0;
+     	gvf_lines_array[k].Hess[0][0] = 0;
+  }
+  *phi = gvf_lines_array[which_line].phi;
+  grad->nx = gvf_lines_array[which_line].grad[0];
+  grad->ny = gvf_lines_array[which_line].grad[1];
+  hess->H11 = 0;
+  hess->H12 = 0;
+  hess->H21 = 0;
+  hess->H22 = 0;
+  	
+}
 void gvf_line_info(float *phi, struct gvf_grad *grad,
                    struct gvf_Hess *hess)
 {

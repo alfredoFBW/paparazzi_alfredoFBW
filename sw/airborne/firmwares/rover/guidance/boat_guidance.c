@@ -35,8 +35,11 @@
 #include "modules/guidance/gvf/gvf.h"
 #include "filters/pid.h"
 
+#include "modules/guidance/gvf_common.h"
 
-// Debugging telemetry
+#include "modules/datalink/telemetry.h"
+
+// Debugging telemetry. Must be included for sys_time
 #ifdef BOAT_DEBUG
 #if PERIODIC_TELEMETRY
 #include "modules/datalink/telemetry.h"
@@ -54,7 +57,8 @@ ctrl_t guidance_control;
 static struct PID_f boat_pid;
 static float time_step;
 static float last_speed_cmd;
-
+uint32_t rover_time = 0;
+uint8_t reset_time = 0;
 
 /** INIT function **/
 void boat_guidance_init(void)
@@ -131,7 +135,8 @@ void boat_guidance_read_NAV(void)
 /** CTRL functions **/
 void boat_guidance_bearing_GVF_ctrl(void)
 {
-  guidance_control.cmd.omega = gvf_control.omega; //GVF give us this omega
+	// omega from gvf_common.h
+  guidance_control.cmd.omega = gvf_c_omega.omega; //GVF give us this omega
   guidance_control.bearing = BoundCmd(guidance_control.kf_bearing * guidance_control.cmd.omega);
 }
 
@@ -149,12 +154,31 @@ void boat_guidance_speed_ctrl(void) // Feed forward + Integral controler + Propo
     last_speed_cmd = guidance_control.cmd.speed;
   }
 
+	boat_guidance_steering_obtain_setpoint();
   // - Updating PID
   guidance_control.speed_error = (guidance_control.cmd.speed - stateGetHorizontalSpeedNorm_f());
   update_pid_f(&boat_pid, guidance_control.speed_error, time_step);
   
   // - Set throttle
   guidance_control.throttle = BoundCmd(guidance_control.kf_speed * guidance_control.cmd.speed + get_pid_f(&boat_pid));
+}
+
+// Obtain setpoin
+void boat_guidance_steering_obtain_setpoint(void)
+{
+	
+	// Setpoint to zero if rover must stay still
+	if((gvf_c_stopwp.stay_still) && (!reset_time)){
+		guidance_control.cmd.speed = 0;
+		rover_time = get_sys_time_msec();
+		reset_time = 1;
+	}
+	else if((gvf_c_stopwp.stay_still) && (reset_time)){
+		if( (get_sys_time_msec() - rover_time) >= 1000*gvf_c_stopwp.wait_time){
+			reset_time = 0;
+			gvf_c_stopwp.stay_still = 0;
+		}	
+	}
 }
 
 

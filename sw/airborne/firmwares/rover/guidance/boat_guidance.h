@@ -105,6 +105,7 @@ extern void boat_guidance_speed_ctrl(void);
 
 extern void boat_guidance_read_NAV(void); //JJC
 
+extern void boat_guidance_steering_obtain_setpoint(void);
 extern void boat_guidance_pid_reset(void);
 extern void boat_guidance_kill(void);
 

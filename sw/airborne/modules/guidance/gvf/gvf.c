@@ -48,6 +48,10 @@ uint32_t gvf_t0 = 0;
 int gvf_plen = 1;
 int gvf_plen_wps = 0;
 
+// Lines
+gvf_li_line gvf_lines_array[GVF_N_LINES];
+
+
 #if PERIODIC_TELEMETRY
 #include "modules/datalink/telemetry.h"
 static void send_gvf(struct transport_tx *trans, struct link_device *dev)
@@ -74,6 +78,11 @@ static void send_gvf(struct transport_tx *trans, struct link_device *dev)
                             &gvf_segment.x1, &gvf_segment.y1,
                             &gvf_segment.x2, &gvf_segment.y2);
     }
+		if (gvf_trajectory.type == LINE_ARRAY && gvf_segment.seg == 1) {
+      pprz_msg_send_SEGMENT(trans, dev, AC_ID,
+                            &gvf_segment.x1, &gvf_segment.y1,
+                            &gvf_segment.x2, &gvf_segment.y2);
+		}
 #endif // GVF_OCAML_GCS
 
   }
@@ -117,8 +126,15 @@ void gvf_init(void)
   gvf_control.ke = 1;
   gvf_control.kn = 1;
   gvf_control.s = 1;
+  gvf_control.which_line = 0; // Start always with first line
   gvf_trajectory.type = NONE;
 
+  // gvf_common.h
+  gvf_c_stopwp.stay_still = 0;
+  gvf_c_stopwp.stop_at_wp = 0;
+  gvf_c_stopwp.distance_stop = 0.1;
+  gvf_c_stopwp.wait_time = 1;
+  
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GVF, send_gvf);
 #endif
@@ -352,6 +368,87 @@ bool gvf_line_wp_heading(uint8_t wp, float heading)
   float b = WaypointY(wp);
 
   return gvf_line_XY_heading(a, b, heading);
+}
+// ARRAY OF STRAIGHT LINES TODO: Make it scalable (right now there are 6 segments)
+bool gvf_lines_array_wp(uint8_t wp0, uint8_t wp1, uint8_t wp2, uint8_t wp3, uint8_t wp4, uint8_t wp5, uint8_t wp6)
+{
+	// Create the points
+	gvf_trajectory.type = 2;
+	float x[GVF_N_LINES+1]; float y[GVF_N_LINES+1];
+	x[0] = WaypointX(wp0); y[0] = WaypointY(wp0);
+	x[1] = WaypointX(wp1); y[1] = WaypointY(wp1);
+	x[2] = WaypointX(wp2); y[2] = WaypointY(wp2);
+	x[3] = WaypointX(wp3); y[3] = WaypointY(wp3);
+	x[4] = WaypointX(wp4); y[4] = WaypointY(wp4);
+	x[5] = WaypointX(wp5); y[5] = WaypointY(wp5);
+	x[6] = WaypointX(wp6); y[6] = WaypointY(wp6);
+	for(int k = 0; k < GVF_N_LINES; k++)
+	{
+		gvf_lines_array[k].p1x = x[k];
+		gvf_lines_array[k].p1y = y[k];
+		gvf_lines_array[k].p2x = x[k+1];
+		gvf_lines_array[k].p2y = y[k+1];
+	}
+	struct EnuCoor_f *p = stateGetPositionEnu_f();
+ 	float px = p->x;
+  	float py = p->y;
+  	float dist = sqrtf( powf(px-gvf_lines_array[gvf_control.which_line].p2x,2) + powf(py-gvf_lines_array[gvf_control.which_line].p2y,2));
+  	if((dist <= gvf_c_stopwp.distance_stop)){
+  		if(!gvf_c_stopwp.stop_at_wp){
+  			gvf_control.which_line = (gvf_control.which_line + 1) % GVF_N_LINES;
+  		}		
+  		if(gvf_c_stopwp.stop_at_wp && !gvf_c_stopwp.stay_still){
+  			gvf_control.which_line = (gvf_control.which_line + 1) % GVF_N_LINES;
+  			gvf_c_stopwp.stay_still = 1;
+  		}
+  	}
+  		
+  	float e;
+  	struct gvf_grad grad_line;
+  	struct gvf_Hess Hess_line;
+  	gvf_line_array_info(&e, &grad_line, &Hess_line, gvf_control.which_line);
+	gvf_control_2D(gvf_line_par.ke, gvf_line_par.kn, e, &grad_line, &Hess_line);
+	gvf_setNavMode(GVF_MODE_WAYPOINT);
+	return true;
+} 
+
+bool gvf_lines_array_wp_v2(uint8_t wp0, uint8_t wp1, uint8_t wp2, uint8_t wp3, uint8_t wp4, uint8_t wp5, uint8_t wp6, float d1, float d2)
+{
+	// Create the points
+	gvf_trajectory.type = 2;
+	float x[GVF_N_LINES+1]; float y[GVF_N_LINES+1];
+	x[0] = WaypointX(wp0); y[0] = WaypointY(wp0);
+	x[1] = WaypointX(wp1); y[1] = WaypointY(wp1);
+	x[2] = WaypointX(wp2); y[2] = WaypointY(wp2);
+	x[3] = WaypointX(wp3); y[3] = WaypointY(wp3);
+	x[4] = WaypointX(wp4); y[4] = WaypointY(wp4);
+	x[5] = WaypointX(wp5); y[5] = WaypointY(wp5);
+	x[6] = WaypointX(wp6); y[6] = WaypointY(wp6);
+	for(int k = 0; k < GVF_N_LINES; k++)
+	{
+		gvf_lines_array[k].p1x = x[k];
+		gvf_lines_array[k].p1y = y[k];
+		gvf_lines_array[k].p2x = x[k+1];
+		gvf_lines_array[k].p2y = y[k+1];
+	}
+	struct EnuCoor_f *p = stateGetPositionEnu_f();
+ 	float px = p->x;
+  	float py = p->y;
+  	float dist = sqrtf( powf(px-gvf_lines_array[gvf_control.which_line].p2x,2) + powf(py-gvf_lines_array[gvf_control.which_line].p2y,2));
+  	if((dist <= gvf_c_stopwp.distance_stop)){
+  		if(!gvf_c_stopwp.stop_at_wp){
+  			gvf_control.which_line = (gvf_control.which_line + 1) % GVF_N_LINES;
+  		}		
+  		if(gvf_c_stopwp.stop_at_wp && !gvf_c_stopwp.stay_still){
+  			gvf_control.which_line = (gvf_control.which_line + 1) % GVF_N_LINES;
+  			gvf_c_stopwp.stay_still = 1;
+  		}
+  	}
+  	float x1 = gvf_lines_array[gvf_control.which_line].p1x;
+   	float y1 = gvf_lines_array[gvf_control.which_line].p1y;
+   	float x2 = gvf_lines_array[gvf_control.which_line].p2x;
+    	float y2 = gvf_lines_array[gvf_control.which_line].p2y;
+    	return gvf_segment_loop_XY1_XY2(x1, y1, x2, y2, d1, d2);
 }
 
 // ELLIPSE

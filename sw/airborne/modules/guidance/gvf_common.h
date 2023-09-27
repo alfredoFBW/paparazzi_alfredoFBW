@@ -21,6 +21,9 @@
  #ifndef GVF_COMMON_H
  #define GVF_COMMON_H
  
+ // uint32_t
+#include "std.h"
+
  /** @typedef gvf_common_omega
 * @brief Horizontal control signal for both gvf
 * @param omega is the horizontal control signal
@@ -32,6 +35,28 @@
  } gvf_common_omega;
  
 extern gvf_common_omega gvf_c_omega;
+
+ /** @typedef gvf_common_params
+* @brief Different parameters obtained from gvfs. dot means d/dt
+* @param kappa is the curve's curvature
+* @param ori_err is the orientation error
+*/
+typedef struct{	
+	float kappa;
+	float kappa_dot;
+	float ori_err;
+	float ori_err_dot;
+} gvf_common_params;
+
+typedef struct{
+	int   stay_still;
+	int   stop_at_wp;
+	uint32_t wait_time;
+	float distance_stop;
+} gvf_common_stop_at_wp;
+ 
+extern gvf_common_params gvf_c_info;
+extern gvf_common_stop_at_wp gvf_c_stopwp;
  
  #endif // GVF_COMMON_H
 

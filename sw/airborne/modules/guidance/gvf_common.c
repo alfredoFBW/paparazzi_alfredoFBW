@@ -20,4 +20,6 @@
  
 #include "./gvf_common.h"
 
-gvf_common_omega gvf_c_omega;
+gvf_common_omega  gvf_c_omega;
+gvf_common_params gvf_c_info;
+gvf_common_stop_at_wp gvf_c_stopwp;
