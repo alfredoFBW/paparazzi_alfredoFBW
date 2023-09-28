@@ -189,14 +189,14 @@ int32_t num_thrusters;
 
 struct Int32Eulers stab_att_sp_euler;
 struct Int32Quat   stab_att_sp_quat;
-struct Int32Rates  stab_att_ff_rates;
+struct FloatRates  stab_att_ff_rates;
 
 abi_event rpm_ev;
 static void rpm_cb(uint8_t sender_id, struct rpm_act_t *rpm_msg, uint8_t num_act);
 
 abi_event thrust_ev;
-static void thrust_cb(uint8_t sender_id, float thrust_increment);
-float indi_thrust_increment;
+static void thrust_cb(uint8_t sender_id, struct FloatVect3 thrust_increment);
+struct FloatVect3 indi_thrust_increment;
 bool indi_thrust_increment_set = false;
 
 float g1g2_pseudo_inv[INDI_NUM_ACT][INDI_OUTPUTS];
@@ -414,7 +414,7 @@ void stabilization_indi_set_rpy_setpoint_i(struct Int32Eulers *rpy)
   stab_att_sp_euler = *rpy;
 
   int32_quat_of_eulers(&stab_att_sp_quat, &stab_att_sp_euler);
-  INT_RATES_ZERO(stab_att_ff_rates);
+  FLOAT_RATES_ZERO(stab_att_ff_rates);
 }
 
 /**
@@ -424,7 +424,7 @@ void stabilization_indi_set_quat_setpoint_i(struct Int32Quat *quat)
 {
   stab_att_sp_quat = *quat;
   int32_eulers_of_quat(&stab_att_sp_euler, quat);
-  INT_RATES_ZERO(stab_att_ff_rates);
+  FLOAT_RATES_ZERO(stab_att_ff_rates);
 }
 
 /**
@@ -448,7 +448,7 @@ void stabilization_indi_set_earth_cmd_i(struct Int32Vect2 *cmd, int32_t heading)
   stab_att_sp_euler.theta = -(c_psi * cmd->x + s_psi * cmd->y) >> INT32_TRIG_FRAC;
 
   quat_from_earth_cmd_i(&stab_att_sp_quat, cmd, heading);
-  INT_RATES_ZERO(stab_att_ff_rates);
+  FLOAT_RATES_ZERO(stab_att_ff_rates);
 }
 
 /**
@@ -460,7 +460,7 @@ void stabilization_indi_set_stab_sp(struct StabilizationSetpoint *sp)
 {
   stab_att_sp_euler = stab_sp_to_eulers_i(sp);
   stab_att_sp_quat = stab_sp_to_quat_i(sp);
-  stab_att_ff_rates = stab_sp_to_rates_i(sp);
+  stab_att_ff_rates = stab_sp_to_rates_f(sp);
 }
 
 /**
@@ -540,7 +540,10 @@ void stabilization_indi_rate_run(struct FloatRates rate_sp, bool in_flight)
     use_increment = 1.0;
   }
 
-  float v_thrust = 0.0;
+  struct FloatVect3 v_thrust;
+  v_thrust.x = 0.0;
+  v_thrust.y = 0.0;
+  v_thrust.z = 0.0;
   if (indi_thrust_increment_set) {
     v_thrust = indi_thrust_increment;
 
@@ -554,7 +557,7 @@ void stabilization_indi_rate_run(struct FloatRates rate_sp, bool in_flight)
   } else {
     // incremental thrust
     for (i = 0; i < INDI_NUM_ACT; i++) {
-      v_thrust +=
+      v_thrust.z +=
         (stabilization_cmd[COMMAND_THRUST] - use_increment*actuator_state_filt_vect[i]) * Bwls[3][i];
     }
   }
@@ -563,7 +566,7 @@ void stabilization_indi_rate_run(struct FloatRates rate_sp, bool in_flight)
   indi_v[0] = (angular_accel_ref.p - use_increment*angular_acceleration[0]);
   indi_v[1] = (angular_accel_ref.q - use_increment*angular_acceleration[1]);
   indi_v[2] = (angular_accel_ref.r - use_increment*angular_acceleration[2] + g2_times_du);
-  indi_v[3] = v_thrust;
+  indi_v[3] = v_thrust.z;
 
 #if STABILIZATION_INDI_ALLOCATION_PSEUDO_INVERSE
   // Calculate the increment for each actuator
@@ -951,7 +954,7 @@ PRINT_CONFIG_MSG("INDI_RPM_FEEDBACK");
 /**
  * ABI callback that obtains the thrust increment from guidance INDI
  */
-static void thrust_cb(uint8_t UNUSED sender_id, float thrust_increment)
+static void thrust_cb(uint8_t UNUSED sender_id, struct FloatVect3 thrust_increment)
 {
   indi_thrust_increment = thrust_increment;
   indi_thrust_increment_set = true;
