@@ -286,7 +286,6 @@ bool gvf_segment_loop_XY1_XY2(float x1, float y1, float x2, float y2, float d1, 
   if (s != 0) {
     gvf_set_direction(s);
   }
-
   float zx = x2 - x1;
   float zy = y2 - y1;
   float alpha = atanf(zx / zy);
@@ -404,8 +403,12 @@ bool gvf_lines_array_wp_v2(uint8_t wp0, uint8_t wp1, uint8_t wp2, uint8_t wp3, u
   	float x1 = gvf_lines_array[gvf_control.which_line].p1x;
    	float y1 = gvf_lines_array[gvf_control.which_line].p1y;
    	float x2 = gvf_lines_array[gvf_control.which_line].p2x;
-    	float y2 = gvf_lines_array[gvf_control.which_line].p2y;
-    	return gvf_segment_loop_XY1_XY2(x1, y1, x2, y2, d1, d2);
+    float y2 = gvf_lines_array[gvf_control.which_line].p2y;
+    gvf_trajectory.p[3] = x2;
+    gvf_trajectory.p[4] = y2;
+    gvf_trajectory.p[5] = 0;
+    gvf_plen_wps = 3;
+    return gvf_segment_loop_XY1_XY2(x1, y1, x2, y2, d1, d2);
 }
 
 // ELLIPSE
