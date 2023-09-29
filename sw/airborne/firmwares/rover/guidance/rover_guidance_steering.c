@@ -41,6 +41,19 @@
 
 #include "modules/guidance/gvf_common.h"
 
+// Moving Average filter. Number of samples
+#ifndef MOV_AVG_M
+#define MOV_AVG_M 10
+#endif
+
+PRINT_CONFIG_VAR(MOV_AVG_M)
+
+// Speed moving average filter parameters
+static int ptr_avg = 0;
+static float speed_avg = 0;
+static float mvg_avg[MOV_AVG_M] = {0};
+
+
 // Guidance control main variables
 rover_ctrl guidance_control;
 
@@ -68,6 +81,12 @@ void rover_guidance_steering_init(void)
   guidance_control.kp = 10;
   guidance_control.ki = 100;
 
+	// Mov avg init speed 
+	float speed = stateGetHorizontalSpeedNorm_f();
+	for(int k = 0; k < MOV_AVG_M; k++)
+		mvg_avg[k] = speed;
+	speed_avg = speed;
+	
   init_pid_f(&rover_pid, guidance_control.kp, 0.f, guidance_control.ki, MAX_PPRZ*0.2);
 
   // Based on autopilot state machine frequency
@@ -99,14 +118,21 @@ void rover_guidance_steering_speed_ctrl(void)
   }
   if (guidance_control.cmd.speed != last_speed_cmd) {
     last_speed_cmd = guidance_control.cmd.speed;
-    //reset_pid_f(&rover_pid);
   }
+  
   rover_guidance_steering_obtain_setpoint();
-  // - Updating PID
-  guidance_control.speed_error = (guidance_control.cmd.speed - stateGetHorizontalSpeedNorm_f());
+  
+  // Mov avg speed
+	speed_avg = speed_avg - mvg_avg[ptr_avg]/MOV_AVG_M;
+	mvg_avg[ptr_avg] = stateGetHorizontalSpeedNorm_f();
+	speed_avg = speed_avg + mvg_avg[ptr_avg]/MOV_AVG_M;
+	ptr_avg = (ptr_avg + 1) % MOV_AVG_M;
+	
+  // Updating PID using the average speed
+  guidance_control.speed_error = (guidance_control.cmd.speed - speed_avg);
   update_pid_f(&rover_pid, guidance_control.speed_error, time_step);
-
   guidance_control.throttle = BoundThrottle(guidance_control.kf*guidance_control.cmd.speed + get_pid_f(&rover_pid));
+  
 }
 
 // Obtains setpoint 

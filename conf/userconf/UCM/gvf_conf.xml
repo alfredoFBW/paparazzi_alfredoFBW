@@ -1,0 +1,57 @@
+<conf>
+  <aircraft
+   name="Rover_UCM"
+   ac_id="2"
+   airframe="airframes/UCM/rover2f405.xml"
+   radio="radios/UCM/T16SZ_SBUS_rover.xml"
+   telemetry="telemetry/default_rover_pidcontrol.xml"
+   flight_plan="flight_plans/UCM/steering_rover_gvfMission.xml"
+   settings=""
+   settings_modules="modules/ahrs_float_dcm.xml modules/electrical.xml modules/gps.xml modules/gps_ublox.xml modules/gps_ubx_ucenter.xml modules/guidance_rover_steering.xml~SR Guidance~ modules/gvf_module.xml~GVF~ modules/imu_common.xml modules/nav_rover_base.xml"
+   gui_color="red"
+  />
+  <aircraft
+   name="Rover_Tana"
+   ac_id="1"
+   airframe="airframes/UCM/rover2f405.xml"
+   radio="radios/UCM/T16SZ_SBUS_rover.xml"
+   telemetry="telemetry/default_rover_pidcontrol.xml"
+   flight_plan="flight_plans/UCM/steering_rover_gvfMission.xml"
+   settings=""
+   settings_modules="modules/ahrs_float_dcm.xml modules/electrical.xml modules/gps.xml modules/gps_ublox.xml modules/gps_ubx_ucenter.xml modules/guidance_rover_steering.xml~SR Guidance~ modules/gvf_module.xml~GVF~ modules/imu_common.xml modules/nav_rover_base.xml"
+   gui_color="#ef0029002900"
+  />
+  <aircraft
+   name="Rover_Satur"
+   ac_id="3"
+   airframe="airframes/UCM/rover2f765Chibios.xml"
+   radio="radios/UCM/T16SZ_SBUS_rover.xml"
+   telemetry="telemetry/default_rover_pidcontrol.xml"
+   flight_plan="flight_plans/UCM/steering_rover_gvfParametricMission.xml"
+   settings=""
+   settings_modules="modules/ahrs_float_dcm.xml modules/electrical.xml modules/gps.xml modules/gps_ublox.xml modules/gps_ubx_ucenter.xml modules/guidance_rover_steering.xml~SR Guidance~ modules/gvf_module.xml~GVF~ modules/gvf_parametric.xml~GVF_PARAMETRIC~ modules/imu_common.xml modules/nav_rover_base.xml"
+   gui_color="#cc0000000000"
+  />
+  <aircraft
+   name="Rover_Avelino"
+   ac_id="4"
+   airframe="airframes/UCM/rover2f405.xml"
+   radio="radios/UCM/T16SZ_SBUS_rover.xml"
+   telemetry="telemetry/default_rover_pidcontrol.xml"
+   flight_plan="flight_plans/UCM/steering_rover_gvfMission.xml"
+   settings=""
+   settings_modules="modules/ahrs_float_dcm.xml modules/electrical.xml modules/gps.xml modules/gps_ublox.xml modules/gps_ubx_ucenter.xml modules/guidance_rover_steering.xml~SR Guidance~ modules/gvf_module.xml~GVF~ modules/imu_common.xml modules/nav_rover_base.xml"
+   gui_color="#8a00e2003400"
+  />
+  <aircraft
+   name="Rover_Pepa"
+   ac_id="5"
+   airframe="airframes/UCM/rover2f405.xml"
+   radio="radios/UCM/T16SZ_SBUS_rover.xml"
+   telemetry="telemetry/default_rover_pidcontrol.xml"
+   flight_plan="flight_plans/UCM/steering_rover_gvfMission.xml"
+   settings=""
+   settings_modules="modules/ahrs_float_dcm.xml modules/gps.xml modules/gps_ublox.xml modules/gps_ubx_ucenter.xml modules/guidance_rover_steering.xml~SR Guidance~ modules/gvf_module.xml~GVF~ modules/imu_common.xml modules/lidar_tfmini.xml modules/nav_rover_base.xml"
+   gui_color="#fc00af003e00"
+  />
+</conf>
