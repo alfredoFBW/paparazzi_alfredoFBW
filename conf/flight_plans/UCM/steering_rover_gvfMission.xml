@@ -21,6 +21,15 @@
     <waypoint name="_N2" x="100" y="-100"/>
     <waypoint name="_N3" x="-100" y="-100"/>
     <waypoint name="_N4" x="-100" y="100"/>
+    
+            <!-- Line waypoints -->
+    <waypoint name="L0" x="6" y="1"/>
+    <waypoint name="L1" x="-6" y="4"/>
+    <waypoint name="L2" x="6" y="7"/>
+    <waypoint name="L3" x="-6" y="10"/>
+    <waypoint name="L4" x="6" y="13"/>
+    <waypoint name="L5" x="-6" y="15"/>
+    <waypoint name="L6" x="6" y="18"/>
   </waypoints>
   
   <sectors>
@@ -30,6 +39,7 @@
       <corner name="_N3"/>
       <corner name="_N4"/>
     </sector>
+   
     
     <!--sector name="Survey" color="green">
       <corner name="_S1"/>
@@ -87,6 +97,11 @@
     
     <block name="sin_p1_p2" strip_icon="line_drop.png"> 
       <call fun="gvf_sin_wp1_wp2(WP_P1, WP_P2, gvf_sin_par.w, gvf_sin_par.off, gvf_sin_par.A)"/>
+      <exception cond="! InsideNet(GetPosX(), GetPosY())" deroute="Standby"/>
+    </block>
+    
+    <block name="line_array" strip_icon="line.png">
+      <call fun="gvf_lines_array_wp_v2(WP_L0, WP_L1, WP_L2, WP_L3, WP_L4, WP_L5, WP_L6, gvf_segment_par.d1, gvf_segment_par.d2)"/>
       <exception cond="! InsideNet(GetPosX(), GetPosY())" deroute="Standby"/>
     </block>
     
