@@ -39,6 +39,12 @@
 
 #include "modules/datalink/telemetry.h"
 
+// Moving Average filter. Number of samples
+#ifndef MOV_AVG_M
+#define MOV_AVG_M 20
+#endif
+PRINT_CONFIG_VAR(MOV_AVG_M)
+
 // Debugging telemetry. Must be included for sys_time
 #ifdef BOAT_DEBUG
 #if PERIODIC_TELEMETRY
@@ -59,6 +65,12 @@ static float time_step;
 static float last_speed_cmd;
 uint32_t rover_time = 0;
 uint8_t reset_time = 0;
+
+// Speed moving average filter parameters
+static int ptr_avg = 0;
+static float speed_avg = 0;
+static float mvg_avg[MOV_AVG_M] = {0};
+
 
 /** INIT function **/
 void boat_guidance_init(void)
@@ -81,6 +93,17 @@ void boat_guidance_init(void)
 
   init_pid_f(&boat_pid, guidance_control.kp, 0.f, guidance_control.ki, MAX_PPRZ*0.2);
 
+	// Mov avg init Speed and distance
+	float speed = stateGetHorizontalSpeedNorm_f();
+	tfmini_event();
+	for(int k = 0; k < MOV_AVG_M; k++){
+		mvg_avg[k] = speed;
+	}
+	speed_avg = speed;
+	
+	// Reset time
+	reset_time = 0;
+	
   // Based on autopilot state machine frequency
   time_step = 1.f/PERIODIC_FREQUENCY;
   
@@ -155,8 +178,18 @@ void boat_guidance_speed_ctrl(void) // Feed forward + Integral controler + Propo
   }
 
 	boat_guidance_steering_obtain_setpoint();
+	
+	// Mov avg speed
+	speed_avg = speed_avg - mvg_avg[ptr_avg]/MOV_AVG_M;
+	mvg_avg[ptr_avg] = stateGetHorizontalSpeedNorm_f();
+	speed_avg = speed_avg + mvg_avg[ptr_avg]/MOV_AVG_M;
+	ptr_avg = (ptr_avg + 1) % MOV_AVG_M;
+	
   // - Updating PID
-  guidance_control.speed_error = (guidance_control.cmd.speed - stateGetHorizontalSpeedNorm_f());
+  //guidance_control.speed_error = (guidance_control.cmd.speed - stateGetHorizontalSpeedNorm_f());
+  
+  // using moving average
+  guidance_control.speed_error = guidance_control.cmd.speed - speed_avg;
   update_pid_f(&boat_pid, guidance_control.speed_error, time_step);
   
   // - Set throttle
