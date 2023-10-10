@@ -42,11 +42,13 @@
 -- Note: a command may be reversed by exchanging min and max values
 -->
 
+<!-- Adjusted to the boat servos https://bluerobotics.com/store/thrusters/t100-t200-thrusters/t200-thruster-r2-rp/ -->
+
 <!DOCTYPE radio SYSTEM "../radio.dtd">
 <radio name="Futaba T16SZ with SBUS" data_min="1000" data_max="2000" sync_min ="5000" sync_max ="15000" pulse_type="POSITIVE">
- <channel function="ROLL"     min="500" neutral="1500" max="1900" average="0"/>
+ <channel function="ROLL"     min="1100" neutral="1500" max="1900" average="0"/> <!-- Adjusted-->
  <channel function="PITCH"    min="1000" neutral="1500" max="2000" average="0"/>
- <channel function="THROTTLE" min="500" neutral="1500" max="1900" average="0"/>
+ <channel function="THROTTLE" min="1100" neutral="1500" max="1900" average="0"/> <!-- Adjusted -->
  <channel function="YAW"      min="1000" neutral="1500" max="2000" average="0"/>
  <channel function="MODE"     min="1000" neutral="1520" max="2000" average="1" reverse="1"/>
  <channel function="GAIN1"    min="1000" neutral="1520" max="2000" average="0"/>

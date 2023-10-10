@@ -89,6 +89,9 @@
 
   <!-- When SetCommandsFromRC -->
   <!-- Positive Throttle when motors mounted properly-->
+  <!-- Adjusted in radio.xml file to obtain 1100 -> 1500
+   https://bluerobotics.com/store/thrusters/t100-t200-thrusters/t200-thruster-r2-rp/
+  -->
   <rc_commands>
     <set command="MLEFT"  value="@THROTTLE + @ROLL"/>
     <set command="MRIGHT" value="@THROTTLE - @ROLL"/>
