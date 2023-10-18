@@ -89,6 +89,10 @@ typedef struct {
   float kf_bearing;
   float kf_speed;
 
+	float kf_speed_static;
+	float kf_bearing_static;
+	
+	int use_dynamic_pos;
   float speed_error;
   float kp;
   float ki;

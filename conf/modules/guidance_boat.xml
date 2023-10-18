@@ -22,6 +22,11 @@
           <dl_setting MAX="1000.0" MIN="0.0" STEP="1" VAR="guidance_control.kp" shortname="kp"/>
           <dl_setting MAX="1000.0" MIN="0.0" STEP="1" VAR="guidance_control.ki" shortname="ki"/>
         </dl_settings>
+        <dl_settings NAME="Static control">
+        	<dl_setting MAX="1" MIN="0" STEP="1" VAR="guidance_control.use_dynamic_pos" shortname="use_dynamic_positioning"/>
+       		<dl_setting MAX="9600.0" MIN="-9600.0" STEP="1" VAR="guidance_control.kf_bearing_static" shortname="kf static"/>
+          <dl_setting MAX="9600.0" MIN="-9600.0" STEP="1" VAR="guidance_control.kf_speed_static" shortname="kf static"/>
+       	</dl_settings>
       </dl_settings>
     </dl_settings>
   </settings>

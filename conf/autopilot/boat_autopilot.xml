@@ -67,9 +67,7 @@
       	<!--TODO: Hay que repensarlo, necesitamos módulo de programación --> 
         <!--call fun="rover_guidance_steering_speed_ctrl()"/>
         <call fun="rover_guidance_steering_heading_ctrl()"/-->
-	<call fun = "boat_guidance_read_NAV()"/>
- 
-	
+				<call fun = "boat_guidance_read_NAV()"/>
         <call fun="SetActuatorsFromCommands(commands, autopilot_get_mode())"/>
         <call fun="SetAPThrottleFromCommands()"/>
       </control>

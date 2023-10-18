@@ -86,12 +86,14 @@ void boat_guidance_init(void)
   
   guidance_control.kf_bearing = BOAT_BEARING_KF;
   guidance_control.kf_speed   = BOAT_SPEED_KF;
-
+	guidance_control.kf_bearing_static = BOAT_BEARING_KF;
+	guidance_control.kf_speed_static = BOAT_SPEED_KF;
+	guidance_control.use_dynamic_pos = 1;
   guidance_control.speed_error = 0.0;
   guidance_control.kp = 10;
   guidance_control.ki = 100;
 
-  init_pid_f(&boat_pid, guidance_control.kp, 0.f, guidance_control.ki, MAX_PPRZ*0.2);
+  init_pid_f(&boat_pid, guidance_control.kp, 0.f, guidance_control.ki, MAX_PPRZ*0.4); // Increased integral bounds
 
 	// Mov avg init Speed and distance
 	float speed = stateGetHorizontalSpeedNorm_f();
@@ -144,8 +146,14 @@ void boat_guidance_read_rc(void){
 /** Navigation guidance function **/
 void boat_guidance_read_NAV(void)
 {
-  boat_guidance_bearing_GVF_ctrl(); //falta meter el caso en que el barco deba conservar la posicion
-  boat_guidance_speed_ctrl();
+	// If we must stay still obtain throttle and bearing from dynamic positioning
+	if((gvf_c_stopwp.stay_still) && (!reset_time) && (guidance_control.use_dynamic_pos)){
+		boat_guidance_bearing_static_ctrl();
+	}
+	else{
+		boat_guidance_bearing_GVF_ctrl();
+		boat_guidance_speed_ctrl();
+	}
   
   //Definimos las ordones suponiendo que no hay saturacion
   commands[COMMAND_MLEFT]  = (guidance_control.throttle - guidance_control.bearing)/2;
@@ -163,8 +171,43 @@ void boat_guidance_bearing_GVF_ctrl(void)
   guidance_control.bearing = BoundCmd(guidance_control.kf_bearing * guidance_control.cmd.omega);
 }
 
-void boat_guidance_bearing_static_ctrl(void){ // TODO: Boat static bearing control
-
+/* Static ctrl */
+void boat_guidance_bearing_static_ctrl(void) // TODO: Boat static bearing control
+{ 
+	// Current position of the boat
+	struct EnuCoor_f *p = stateGetPositionEnu_f();
+  float px = p->x;
+  float py = p->y;
+ 
+  // Desired position for the boat
+  float pd[2]; 
+  
+  // Boat's orientation u = (cos(theta), sin(theta))
+  float theta = atan2f(py,px);
+  float u[2];
+  
+  // s = p - pd
+  float s[2];
+  
+ 	pd[0] = gvf_c_stopwp.pxd;
+ 	pd[1] = gvf_c_stopwp.pyd;
+ 	
+ 	u[0] = cosf(theta); u[1] = sinf(theta);
+ 	s[0] = (px - pd[0]); s[1] = (py - pd[1]);
+ 
+  // normalized using euclidean norm
+  float ns = sqrtf(s[0] * s[0] + s[1] * s[1]);
+  
+	s[0] /= ns; s[1] /= ns;
+  
+  float sTu = u[0]*s[0] + u[1]*s[1];  // cos(beta), beta = angle(u,s)
+  float sTEu = s[0]*u[1] - u[1]*s[0]; // sin(beta)
+  
+  float tau = guidance_control.kf_bearing_static * sTu * sTEu;
+  float f = guidance_control.kf_speed_static * sTu * ns;
+  
+  guidance_control.bearing = BoundCmd(tau);
+  guidance_control.throttle = BoundCmd(f);
 }
 
 void boat_guidance_speed_ctrl(void) // Feed forward + Integral controler + Propotional (PID)
