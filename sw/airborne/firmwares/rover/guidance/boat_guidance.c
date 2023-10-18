@@ -171,8 +171,8 @@ void boat_guidance_bearing_GVF_ctrl(void)
   guidance_control.bearing = BoundCmd(guidance_control.kf_bearing * guidance_control.cmd.omega);
 }
 
-/* Static ctrl */
-void boat_guidance_bearing_static_ctrl(void) // TODO: Boat static bearing control
+/* Static ctrl. Only works for GVF line array TODO: Improvements to work in any point */
+void boat_guidance_bearing_static_ctrl(void)
 { 
 	// Current position of the boat
 	struct EnuCoor_f *p = stateGetPositionEnu_f();
@@ -182,9 +182,8 @@ void boat_guidance_bearing_static_ctrl(void) // TODO: Boat static bearing contro
   // Desired position for the boat
   float pd[2]; 
   
-  // Beware, assuming that dp \simeq h 
-  // (that is, direction of speed \simeq direction of motion)
-  float theta = stateGetHorizontalSpeedDir_f();
+  // psi = angle between the direction of the vehicle and the origin of coordinates
+  float psi = stateGetNedToBodyEulers_f()->psi;
   float u[2];
   
   // s = p - pd
@@ -193,7 +192,7 @@ void boat_guidance_bearing_static_ctrl(void) // TODO: Boat static bearing contro
  	pd[0] = gvf_c_stopwp.pxd;
  	pd[1] = gvf_c_stopwp.pyd;
  	
- 	u[0] = cosf(theta); u[1] = sinf(theta);
+ 	u[0] = cosf(psi); u[1] = sinf(psi);
  	s[0] = (px - pd[0]); s[1] = (py - pd[1]);
  
   // normalized using euclidean norm
