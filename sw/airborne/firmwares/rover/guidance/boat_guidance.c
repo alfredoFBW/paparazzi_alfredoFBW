@@ -182,8 +182,9 @@ void boat_guidance_bearing_static_ctrl(void) // TODO: Boat static bearing contro
   // Desired position for the boat
   float pd[2]; 
   
-  // Boat's orientation u = (cos(theta), sin(theta))
-  float theta = atan2f(py,px);
+  // Beware, assuming that dp \simeq h 
+  // (that is, direction of speed \simeq direction of motion)
+  float theta = stateGetHorizontalSpeedDir_f();
   float u[2];
   
   // s = p - pd
@@ -201,7 +202,7 @@ void boat_guidance_bearing_static_ctrl(void) // TODO: Boat static bearing contro
 	s[0] /= ns; s[1] /= ns;
   
   float sTu = u[0]*s[0] + u[1]*s[1];  // cos(beta), beta = angle(u,s)
-  float sTEu = s[0]*u[1] - u[1]*s[0]; // sin(beta)
+  float sTEu = s[0]*u[1] - s[1]*u[0]; // sin(beta)
   
   float tau = guidance_control.kf_bearing_static * sTu * sTEu;
   float f = guidance_control.kf_speed_static * sTu * ns;
