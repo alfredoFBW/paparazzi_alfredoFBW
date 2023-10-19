@@ -64,11 +64,13 @@
     </module>
 	    
     <module name="gvf"  type="module"/>
+    <module name="gvf_parametric_bare"/>
     <module name="guidance" type="boat">
     	<define name="BOAT_SPEED_KF" value="1000"/>
       <define name="BOAT_BEARING_KF" value="1000"/>
     </module>
 
+		
   </firmware>
 
 
