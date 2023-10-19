@@ -65,6 +65,7 @@
     <module name="gvf_parametric">
     	<define name="MOV_AVG_GVF_M" value="20"/>
     </module>
+    <!--module name="gvf_parametric_bare"/-->
     
     <module name="guidance" type="rover_steering">
       <define name="MAX_DELTA"            value="15.0"/>
