@@ -183,6 +183,7 @@ void boat_guidance_bearing_static_ctrl(void)
   float pd[2]; 
   
   // psi = angle between the direction of the vehicle and the origin of coordinates
+  // Tip: Use magnetometer (USE_MAGNETOMETER defined), gps course is bad at low speeds
   float psi = stateGetNedToBodyEulers_f()->psi;
   float u[2];
   
@@ -201,7 +202,7 @@ void boat_guidance_bearing_static_ctrl(void)
 	s[0] /= ns; s[1] /= ns;
   
   float sTu = u[0]*s[0] + u[1]*s[1];  // cos(beta), beta = angle(u,s)
-  float sTEu = s[0]*u[1] - s[1]*u[0]; // sin(beta)
+  float sTEu = -s[0]*u[1] + s[1]*u[0]; // sin(beta)
   
   float tau = guidance_control.kf_bearing_static * sTu * sTEu;
   float f = guidance_control.kf_speed_static * sTu * ns;
