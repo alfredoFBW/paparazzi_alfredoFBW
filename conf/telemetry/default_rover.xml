@@ -30,6 +30,7 @@
       <message name="ACTUATORS"              period="1.0"/>
       <message name="RC"                       period="0.5"/>
       <message name="GVF"										 period="1.0"/>
+      <message name="GVF_PARAMETRIC"				 period="1.2"/>
     </mode>
 
     <mode name="low" key_press="l">
