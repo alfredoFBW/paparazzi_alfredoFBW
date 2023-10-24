@@ -97,7 +97,6 @@ void gvf_parametric_bare_init(void)
   gvf_parametric_bare_control.k_psi = GVF_PARAMETRIC_BARE_CONTROL_KPSI;
   gvf_parametric_bare_control.L = GVF_PARAMETRIC_BARE_CONTROL_L;
   gvf_parametric_bare_control.beta = GVF_PARAMETRIC_BARE_CONTROL_BETA;
-
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GVF_PARAMETRIC, send_gvf_parametric_bare);
 #if GVF_OCAML_GCS
@@ -155,7 +154,7 @@ void gvf_parametric_bare_control_2D(float kx, float ky, float f1, float f2, floa
   // Chi
   X[0] = L * ( L * beta * f1d - kx * phi1);
   X[1] = L * ( L * beta * f2d - ky * phi2);
-  X[2] = L * (L - beta * (kx * phi1 * f1d + ky * phi2 * f2d));
+  X[2] = L * ( L * L + beta * (kx * phi1 * f1d + ky * phi2 * f2d));
   
 	Xp[0] = X[0];
 	Xp[1] = X[1];
@@ -164,19 +163,15 @@ void gvf_parametric_bare_control_2D(float kx, float ky, float f1, float f2, floa
 	Xpn[0] = Xp[0]/chipnorm;
 	Xpn[1] = Xp[1]/chipnorm;
 	
-   // Jacobian (here's the problem)
+  // Jacobian
   J[0][0] = -kx * L * L;
   J[0][1] = 0;
-  J[0][2] = L * (beta * L) * (beta * f1dd + kx * f1d);
+  J[0][2] = L * (L * L * beta * beta * f1dd + kx * beta * L * f1d);
   J[1][0] = 0;
   J[1][1] = -ky * L * L;
-  J[1][2] = L * (beta * L) * (beta * f2dd + ky * f2d);
-  //J[1][1] = -ky * L * L;
-  //J[2][0] = L * (beta * L) * (beta * f1dd + kx * f1d);
-  //J[2][1] = L * (beta * L) * (beta * f2dd + ky * f2d);
-  //J[2][2] = L * beta * beta * (kx * (phi1 * f1dd - L * f1d * f1d) + ky * (phi2 * f2dd - L * f2d * f2d));
+  J[1][2] = L * (L * L * beta * beta * f2dd + kx * beta * L * f2d);
   
-    // Guidance algorithm
+  // Guidance algorithm
   float ground_speed = stateGetHorizontalSpeedNorm_f();
   float w_dot = (ground_speed * X[2]) / sqrtf(X[0] * X[0] + X[1] * X[1]);
   
@@ -209,7 +204,10 @@ void gvf_parametric_bare_control_2D(float kx, float ky, float f1, float f2, floa
   gvf_c_omega.omega   = heading_rate; 
   gvf_c_info.kappa    = (f1d*f2dd - f1dd*f2d)/powf(f1d*f1d + f2d*f2d, 1.5);
   gvf_c_info.ori_err  = 1 - (Xpn[0]*cosf(course) + Xpn[1]*sinf(course));
-	gvf_parametric_bare_control.w += w_dot * gvf_parametric_bare_control.delta_T * 1e-5;
+  
+	// Virtual coordinate update, even if the vehicle is not in autonomous mode, the parameter w will get "closer" to
+  // the vehicle. So it is not only okei but advisable to update it.
+	gvf_parametric_bare_control.w += w_dot * gvf_parametric_bare_control.delta_T * 1e-3;
 }
 
 
