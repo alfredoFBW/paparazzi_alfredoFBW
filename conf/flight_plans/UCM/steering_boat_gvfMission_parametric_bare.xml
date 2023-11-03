@@ -122,9 +122,13 @@
     </block>
     
     <block name="gvf_bezier_bare">
-      <call fun="gvf_parametric_bare_2D_bezier_wp(WP_BZ0, WP_BZ1, WP_BZ2,WP_BZ3,WP_BZ4, WP_BZ5, WP_BZ6, WP_BZ7, WP_BZ8, WP_BZ9, WP_BZ10, WP_BZ11, WP_BZ12)"/>
+      <call fun="gvf_parametric_bare_2D_bezier_wp(WP_BZ0)"/>
       <exception cond="! InsideNet(GetPosX(), GetPosY())" deroute="Standby"/>
     </block>
     
+    <block name="gvf_quintic_bezier_bare">
+      <call fun="gvf_parametric_bare_2D_quintic_bezier_wp(WP_BZ0)"/>
+      <exception cond="! InsideNet(GetPosX(), GetPosY())" deroute="Standby"/>
+    </block>
   </blocks>
 </flight_plan>

@@ -86,6 +86,7 @@ extern gvf_parametric_bare_con gvf_parametric_bare_control;
 // Parameters for the trajectories
 enum trajectories_parametric_bare {
   BEZIER_2D_BARE = 3,
+  QUINTIC_BEZIER_2D_BARE = 4,
   NONE_PARAMETRIC_BARE = 255,
 };
 
@@ -113,10 +114,13 @@ extern void gvf_parametric_bare_control_3D(float, float, float, float, float, fl
 extern bool gvf_parametric_bare_2D_trefoil_XY(float, float, float, float, float, float, float);
 extern bool gvf_parametric_bare_2D_trefoil_wp(uint8_t, float, float, float, float, float);
 
-// 2D BEZIER
-extern bool gvf_parametric_bare_2D_bezier_wp(uint8_t , uint8_t , uint8_t , uint8_t , uint8_t , uint8_t , 
-																				uint8_t , uint8_t , uint8_t, uint8_t, uint8_t, uint8_t, uint8_t);
+// 2D CUBIC BEZIER
+extern bool gvf_parametric_bare_2D_bezier_wp(uint8_t);
 extern bool gvf_parametric_bare_2D_bezier_XY(void);
+
+// 2D QUINTIC BEZIER
+extern bool gvf_parametric_bare_2D_quintic_bezier_wp(uint8_t);
+extern bool gvf_parametric_bare_2D_quintic_bezier_XY(void);
 
 // 3D Ellipse
 extern bool gvf_parametric_bare_3D_ellipse_XYZ(float, float, float, float, float, float);
