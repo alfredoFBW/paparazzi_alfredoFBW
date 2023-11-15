@@ -65,7 +65,9 @@
     <module name="gvf" type="module"/>
     
     <!-- now gvf_parametric can be used in bare metal -->
-    <module name="gvf_parametric_bare"/>	
+    <module name="gvf_parametric_bare">
+      <define name="GVF_PARAMETRIC_BARE_2D_BEZIER_N_SEG" value="3"/>
+    </module>
     
     <!-- Obstacle grid -->
     <!--
