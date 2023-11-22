@@ -82,7 +82,13 @@ static void send_gvf(struct transport_tx *trans, struct link_device *dev)
       pprz_msg_send_SEGMENT(trans, dev, AC_ID,
                             &gvf_segment.x1, &gvf_segment.y1,
                             &gvf_segment.x2, &gvf_segment.y2);
-		}
+      // Draw approaching circle
+      pprz_msg_send_CIRCLE(trans, dev, AC_ID,
+      			    &gvf_segment.x2, &gvf_segment.y2,
+      			    &gvf_c_stopwp.distance_stop);
+      			    
+    }
+    
 #endif // GVF_OCAML_GCS
 
   }

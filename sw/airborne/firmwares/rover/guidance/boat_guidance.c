@@ -87,7 +87,7 @@ void boat_guidance_init(void)
   guidance_control.kf_bearing = BOAT_BEARING_KF;
   guidance_control.kf_speed   = BOAT_SPEED_KF;
 	guidance_control.kf_bearing_static = BOAT_BEARING_KF;
-	guidance_control.kf_speed_static = BOAT_SPEED_KF;
+	guidance_control.kf_speed_static = -BOAT_SPEED_KF;
 	guidance_control.use_dynamic_pos = 1;
   guidance_control.speed_error = 0.0;
   guidance_control.kp = 10;
@@ -147,7 +147,7 @@ void boat_guidance_read_rc(void){
 void boat_guidance_read_NAV(void)
 {
 	// If we must stay still obtain throttle and bearing from dynamic positioning
-	if((gvf_c_stopwp.stay_still) && (!reset_time) && (guidance_control.use_dynamic_pos)){
+	if((gvf_c_stopwp.stay_still) && (reset_time) && (guidance_control.use_dynamic_pos)){
 		boat_guidance_bearing_static_ctrl();
 	}
 	else{
