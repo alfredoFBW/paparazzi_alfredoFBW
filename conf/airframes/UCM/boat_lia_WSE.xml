@@ -33,6 +33,7 @@
     <module name="ahrs" type="float_dcm">
     	<!-- Do not use gps for course in the boat -->
       <!--define name="AHRS_FLOAT_MIN_SPEED_GPS_COURSE" value="0.1"/-->
+      <!-- Beware, if using other filters, the name AHRS_.. is different, the value is the same -->
       <define name ="AHRS_DCM_MAG_ID" value="MAG_QMC5883L_SENDER_ID"/>
     </module>
     
