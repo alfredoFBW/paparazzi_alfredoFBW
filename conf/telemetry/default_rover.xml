@@ -31,6 +31,8 @@
       <message name="RC"                       period="0.5"/>
       <message name="GVF"										 period="1.0"/>
       <message name="GVF_PARAMETRIC"				 period="1.2"/>
+      <message name="IMU_MAG_RAW"						 period="0.5"/>
+      <message name="IMU_ACCEL"							 period="0.5"/>
     </mode>
 
     <mode name="low" key_press="l">
