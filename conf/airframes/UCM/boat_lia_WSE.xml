@@ -139,6 +139,7 @@
     <define name="ACCEL_Z_SENS" value="4.778923416058284" integer="16"/>
 
 		<!-- Calibracion 30 november 2023 -->
+		<!--
 		<define name="IMU_MAG_CALIB" value="{{.abi_id=7, .calibrated={.neutral=true, .scale=true},.neutral={2845,1061,1782}, .scale={{45167,35608,64165},{2481,10789,4398}}}}"/>
 		<define name="MAG_X_NEUTRAL" value="2845"/>
 		<define name="MAG_Y_NEUTRAL" value="1061"/>
@@ -146,6 +147,17 @@
 		<define name="MAG_X_SENS" value="18.20515926892537" integer="16"/>
 		<define name="MAG_Y_SENS" value="3.300398550842525" integer="16"/>
 		<define name="MAG_Z_SENS" value="14.589586194551865" integer="16"/>
+		-->
+		<!---->
+		<define name="IMU_MAG_CALIB" value="{{.abi_id=7, .calibrated={.neutral=true, .scale=true},.neutral={2906,1754,1868}, .scale={{24718,32983,28399},{1843,9598,1192}}}}"/>
+
+		<define name="MAG_X_NEUTRAL" value="2906"/>
+		<define name="MAG_Y_NEUTRAL" value="1754"/>
+		<define name="MAG_Z_NEUTRAL" value="1868"/>
+		<define name="MAG_X_SENS" value="13.41182847251836" integer="16"/>
+		<define name="MAG_Y_SENS" value="3.436445093034937" integer="16"/>
+		<define name="MAG_Z_SENS" value="23.824664598691403" integer="16"/>
+
 
   </section>
 

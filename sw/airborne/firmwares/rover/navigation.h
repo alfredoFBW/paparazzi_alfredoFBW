@@ -68,6 +68,9 @@
 #define FAILSAFE_MODE_DISTANCE (1.2*MAX_DIST_FROM_HOME)
 #endif
 
+/** Obtain power voltage */
+#define PowerVoltage() (electrical.vsupply)
+
 /** Nav modes */
 #define NAV_MODE_WAYPOINT 0
 #define NAV_MODE_ROUTE    1
