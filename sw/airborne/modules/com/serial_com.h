@@ -21,9 +21,9 @@
  *          Juan Francisco Jiménez Castellanos
  *          Lía García Pérez
  *          Hector Garcia de Marina
- * 
+ *
  */
- 
+
 #ifndef SERIAL_COM_H
 #define SERIAL_COM_H
 
@@ -50,50 +50,56 @@ struct serial_send_t {
   uint8_t error_cnt;
   uint8_t error_last;
 
- 
+
   uint16_t time;
-  
+
   int32_t lon;
   int32_t lat;
   int32_t alt;
-  
+
   uint32_t distance;
   uint8_t confidence;
-  
+
   uint16_t ck;
 
 };
 
 struct serial_parse_t {
- 
+
   uint8_t msg_id;
 
   uint8_t msgData[SERIAL_MAX_MSG] __attribute__((aligned));
   uint8_t status;
-  
+
   uint8_t error_cnt;
   uint8_t error_last;
-  
+
   uint8_t payload_len;
-  
+
   uint16_t ck;
   bool msg_available;
-  
- 
+
+
   uint16_t time;
   uint16_t depth;
- 
+
+  // For batteries (voltage and current)
+  uint16_t vbat_left;
+  uint16_t vbat_right;
+  uint16_t cbat_left;
+  uint16_t cbat_right;
+
 
 };
 
 void serial_read_message(void);
-void itoh(int value, unsigned char* str, int nbytes);
-unsigned int serial_byteToint(uint8_t * bytes,int length);
-void ito2h(int value, unsigned char* str) ;
+void itoh(int value, unsigned char *str, int nbytes);
+unsigned int serial_byteToint(uint8_t *bytes, int length);
+void ito2h(int value, unsigned char *str) ;
 void serial_calculateChecksumMsg(uint8_t *msg, int msgLength);
 extern struct serial_parse_t serial_msg;
 
-	
+
 /* External functions (called by the autopilot)*/
 extern void serial_init(void);
 extern void serial_ping(void);

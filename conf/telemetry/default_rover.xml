@@ -25,10 +25,10 @@
       <message name="I2C_ERRORS"             period="4.1"/>
       <message name="UART_ERRORS"            period="3.1"/>
       <message name="BR_SONAR"               period="1.0"/>
-      <message name="SERIAL_COM"	      period="2.0"/>
-      <message name="INFO_MSG"	      period="0.25"/>
+      <message name="SERIAL_COM"	           period="1.0"/>
+      <message name="INFO_MSG"	             period="0.25"/>
       <message name="ACTUATORS"              period="1.0"/>
-      <message name="RC"                       period="0.5"/>
+      <message name="RC"                     period="0.5"/>
       <message name="GVF"										 period="1.0"/>
       <message name="GVF_PARAMETRIC"				 period="1.2"/>
       <message name="IMU_MAG_RAW"						 period="0.5"/>

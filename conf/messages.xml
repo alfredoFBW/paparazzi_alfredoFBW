@@ -1868,22 +1868,26 @@
     </message>
 
     <message name="SERIAL_COM" id="212">
-     	 <field name="time"		alt_unit="s"		type="uint16"/>
-    	 <field name="lat"		alt_unit="1e7deg"	type="int32"/>
-    	 <field name="lon"		alt_unit="1e7deg"	type="int32"/>
-    	 <field name="alt"		alt_unit="mm"		type="int32"/>
-    	 <field name="distance"	alt_unit="mm"		type="uint32"/> 
-    	 <field name="confidence"	alt_unit="%"		type="uint8"/>
-    	  <field name="msg_snd_error"				type="uint8"/> 
-    	 <field name="msg_snd_length"				type="uint8"/>
-    	 <field name="checksum"				type="uint16"/>
-    	 <field name="recv_id"					type="uint8"/>
-    	 <field name="recv_status"				type="uint8"/>
-    	 <field name="recv_payld_len"				type="uint8"/>
-    	 <field name="recv_time"	alt_unit="s"		type="uint16"/>
-    	 <field name="recv_depth"	alt_unit="mm"		type="uint16"/>
-    	  <field name="msg_recv_error"			type="uint8"/> 
-    	  <field name="msg_snd_chks"				type="uint16"/> 
+     	 <field name="time"		              alt_unit="s"		type="uint16"/>
+    	 <field name="lat"		           alt_unit="1e7deg"	type="int32"/>
+    	 <field name="lon"		           alt_unit="1e7deg"	type="int32"/>
+    	 <field name="alt"		             alt_unit="mm"		type="int32"/>
+    	 <field name="distance"	           alt_unit="mm"		type="uint32"/> 
+    	 <field name="confidence"	           alt_unit="%"		type="uint8"/>
+    	  <field name="msg_snd_error"				                type="uint8"/> 
+    	 <field name="msg_snd_length"				                type="uint8"/>
+    	 <field name="checksum"				                      type="uint16"/>
+    	 <field name="recv_id"					                    type="uint8"/>
+    	 <field name="recv_status"				                  type="uint8"/>
+    	 <field name="recv_payld_len"				                type="uint8"/>
+    	 <field name="recv_time"           	alt_unit="s"		type="uint16"/>
+    	 <field name="recv_depth"	          alt_unit="mm"		type="uint16"/>
+    	 <field name="recv_left_v_bat"                      type="uint16" unit="mV"> Left Battery Voltage (mV)</field>
+    	 <field name="recv_left_i_bat"                      type="uint16" unit="mV"> Left Battery Current (mA)</field>
+    	 <field name="recv_right_v_bat"                     type="uint16" unit="mV"> Right Battery Voltage (mV)</field>
+     	 <field name="recv_right_i_bat"                     type="uint16" unit="mV"> Right Battery Current (mA)</field>
+    	  <field name="msg_recv_error"			                type="uint8"/> 
+    	  <field name="msg_snd_chks"				                type="uint16"/> 
     	  
     </message>
 
