@@ -149,6 +149,7 @@
 		<define name="MAG_Z_SENS" value="14.589586194551865" integer="16"/>
 		-->
 		<!---->
+		<!--
 		<define name="IMU_MAG_CALIB" value="{{.abi_id=7, .calibrated={.neutral=true, .scale=true},.neutral={2906,1754,1868}, .scale={{24718,32983,28399},{1843,9598,1192}}}}"/>
 
 		<define name="MAG_X_NEUTRAL" value="2906"/>
@@ -157,6 +158,16 @@
 		<define name="MAG_X_SENS" value="13.41182847251836" integer="16"/>
 		<define name="MAG_Y_SENS" value="3.436445093034937" integer="16"/>
 		<define name="MAG_Z_SENS" value="23.824664598691403" integer="16"/>
+		-->
+		<define name="IMU_MAG_CALIB" value="{{.abi_id=7, .calibrated={.neutral=true, .scale=true},.neutral={3095,1774,2523}, .scale={{9274,38690,65015},{671,12717,4116}}}}"/>
+
+<define name="MAG_X_NEUTRAL" value="3095"/>
+<define name="MAG_Y_NEUTRAL" value="1774"/>
+<define name="MAG_Z_NEUTRAL" value="2523"/>
+<define name="MAG_X_SENS" value="13.821162463483756" integer="16"/>
+<define name="MAG_Y_SENS" value="3.0423842122333538" integer="16"/>
+<define name="MAG_Z_SENS" value="15.79567543621595" integer="16"/>
+
 
 
   </section>
