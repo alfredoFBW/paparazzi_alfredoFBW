@@ -33,6 +33,9 @@
       <message name="GVF_PARAMETRIC"				 period="1.2"/>
       <message name="IMU_MAG_RAW"						 period="0.5"/>
       <message name="IMU_ACCEL"							 period="0.5"/>
+      <message name="IMU_GYRO"               period="0.5"/>
+      <message name="IMU_ACCEL_RAW"     period=".05"/>
+      <message name="IMU_GYRO_RAW"      period=".05"/>
     </mode>
 
     <mode name="low" key_press="l">

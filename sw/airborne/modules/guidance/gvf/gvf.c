@@ -48,6 +48,8 @@ uint32_t gvf_t0 = 0;
 int gvf_plen = 1;
 int gvf_plen_wps = 0;
 
+int puntero_bz_static=0;
+
 // Lines
 gvf_li_line gvf_lines_array[GVF_N_LINES];
 
@@ -397,8 +399,8 @@ bool gvf_lines_array_wp_v2(uint8_t wp0, uint8_t wp1, uint8_t wp2, uint8_t wp3, u
 	}
 	struct EnuCoor_f *p = stateGetPositionEnu_f();
  	float px = p->x;
-  	float py = p->y;
-  	float dist = sqrtf( powf(px-gvf_lines_array[gvf_control.which_line].p2x,2) + powf(py-gvf_lines_array[gvf_control.which_line].p2y,2));
+  float py = p->y;
+  float dist = sqrtf( powf(px-gvf_lines_array[gvf_control.which_line].p2x,2) + powf(py-gvf_lines_array[gvf_control.which_line].p2y,2));
   	if((dist <= gvf_c_stopwp.distance_stop)){
   		if(!gvf_c_stopwp.stop_at_wp){
   			gvf_control.which_line = (gvf_control.which_line + 1) % GVF_N_LINES;
@@ -536,4 +538,48 @@ bool gvf_sin_wp_alpha(uint8_t wp, float alpha, float w, float off, float A)
 
   return true;
 }
+
+bool dist_bool(float x_, float y_, uint8_t wp0){
+
+	float x[3*(GVF_PARAMETRIC_BARE_2D_BEZIER_N_SEG+1)];
+	float y[3*(GVF_PARAMETRIC_BARE_2D_BEZIER_N_SEG+1)];
+	for(int k = 0; k < 3 * (GVF_PARAMETRIC_BARE_2D_BEZIER_N_SEG + 1); k++){
+	  x[k] = WaypointX(wp0+k);
+	  y[k] = WaypointY(wp0+k);
+	}
+	
+	float x_bz[GVF_PARAMETRIC_BARE_2D_BEZIER_N_SEG+1];
+	float y_bz[GVF_PARAMETRIC_BARE_2D_BEZIER_N_SEG+1];
+	
+	x_bz[0]=x[0]; y_bz[0]=y[0];
+	x_bz[1]=x[4]; y_bz[0]=y[4];
+	x_bz[2]=x[7]; y_bz[2]=y[7];
+	x_bz[3]=x[11]; y_bz[3]=y[11];
+	
+  
+ 	float px = x_;
+  float py = y_;
+  float dist = sqrtf( powf(px-x_bz[puntero_bz_static],2) + powf(py-y_bz[puntero_bz_static],2));
+  if((dist <= gvf_c_stopwp.distance_stop)){	
+  	if(gvf_c_stopwp.stop_at_wp && !gvf_c_stopwp.stay_still){
+  		gvf_c_stopwp.stay_still = 1;
+  		gvf_c_stopwp.pxd = x_bz[puntero_bz_static]; 
+  		gvf_c_stopwp.pyd = y_bz[puntero_bz_static];
+  		puntero_bz_static++;
+  		return true;
+  	}
+  	puntero_bz_static++;
+  } 
+  return false;
+}
+
+
+
+
+
+
+
+
+
+
 

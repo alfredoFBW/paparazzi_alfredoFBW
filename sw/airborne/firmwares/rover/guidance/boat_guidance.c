@@ -172,7 +172,7 @@ void boat_guidance_bearing_GVF_ctrl(void)
 }
 
 /* Static ctrl. Only works for GVF line array TODO: Improvements to work in any point */
-void boat_guidance_bearing_static_ctrl(void)
+bool boat_guidance_bearing_static_ctrl(void)
 { 
 	// Current position of the boat
 	struct EnuCoor_f *p = stateGetPositionEnu_f();
@@ -209,6 +209,8 @@ void boat_guidance_bearing_static_ctrl(void)
   
   guidance_control.bearing = BoundCmd(tau);
   guidance_control.throttle = BoundCmd(f);
+  
+  return true;
 }
 
 void boat_guidance_speed_ctrl(void) // Feed forward + Integral controler + Propotional (PID)
