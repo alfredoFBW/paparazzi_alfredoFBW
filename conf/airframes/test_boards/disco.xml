@@ -7,7 +7,7 @@
   </description>
 
   <firmware name="fixedwing">
-    <configure name="USE_MAGNETOMETER" value="TRUE"/>
+    <configure name="USE_MAGNETOMETER" value="FALSE"/>
 
     <target name="ap" board="disco">
       <configure name="PERIODIC_FREQUENCY" value="120"/>
@@ -27,7 +27,7 @@
     <module name="gps" type="ubx_ucenter"/>
     <module name="ins" type="alt_float"/>
     <module name="airspeed" type="ms45xx_i2c">
-      <define name="MS45XX_I2C_DEV" value="i2c1"/>
+      <configure name="MS45XX_I2C_DEV" value="i2c1"/>
       <define name="MS45XX_PRESSURE_RANVE" value="0.05"/>
     </module>
     <module name="air_data"/>

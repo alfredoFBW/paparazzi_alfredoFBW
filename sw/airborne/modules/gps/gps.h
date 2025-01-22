@@ -34,8 +34,10 @@ extern "C" {
 #include "std.h"
 #include "math/pprz_geodetic_int.h"
 #include "math/pprz_geodetic_float.h"
+#include "math/pprz_geodetic_double.h"
 
 #include "mcu_periph/sys_time.h"
+#include "generated/airframe.h"
 
 #define GPS_FIX_NONE 0x00     ///< No GPS fix
 #define GPS_FIX_2D   0x02     ///< 2D GPS fix
@@ -123,34 +125,17 @@ struct GpsTimeSync {
   uint32_t t0_ticks;    ///< hw clock ticks when GPS message is received
 };
 
-/** data structures for GPS with RTK capabilities */
-struct GpsRelposNED {
-  uint32_t iTOW;
-  uint16_t refStationId;
-  int32_t relPosN;
-  int32_t relPosE;
-  int32_t relPosD;
-  int8_t relPosHPN;
-  int8_t relPosHPE;
-  int8_t relPosHPD;
-  uint32_t accN;
-  uint32_t accE;
-  uint32_t accD;
-  uint8_t carrSoln;
-  uint8_t relPosValid;
-  uint8_t diffSoln;
-  uint8_t gnssFixOK;
-};
+struct RelPosNED {
+  uint16_t reference_id;      ///< Reference station identification
+  uint32_t tow;               ///< Time of week (GPS) in ms
 
-struct RtcmMan {
-  uint16_t RefStation;
-  uint16_t MsgType; // Counter variables to count the number of Rtcm msgs in the input stream(for each msg type)
-  uint32_t Cnt105;
-  uint32_t Cnt177;
-  uint32_t Cnt187; // Counter variables to count the number of messages that failed Crc Check
-  uint32_t Crc105;
-  uint32_t Crc177;
-  uint32_t Crc187;
+  struct NedCoor_d pos;       ///< Relative postion to the reference station in meters
+  double distance;            ///< Relative distance to the reference station in meters
+  float heading;              ///< Relative heading to the reference station in radians
+
+  struct NedCoor_f pos_acc;   ///< Position accuracy in meters
+  float distance_acc;         ///< Distance accuracy in meters
+  float heading_acc;          ///< Heading accuracy in radians
 };
 
 /** global GPS state */
